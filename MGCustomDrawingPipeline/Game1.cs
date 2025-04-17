@@ -46,6 +46,33 @@ namespace MGCustomDrawingPipeline
         /// </summary>
         private VertexDeclaration _vertexDeclaration;
         
+        //===== Post-Processing Components =====//
+        
+        /// <summary>
+        /// Render target for the main scene
+        /// </summary>
+        private RenderTarget2D _sceneRenderTarget;
+        
+        /// <summary>
+        /// Shader effect for the bloom post-processing
+        /// </summary>
+        private Effect _bloomEffect;
+        
+        /// <summary>
+        /// Bloom intensity parameter
+        /// </summary>
+        private float _bloomIntensity = 1.5f;
+        
+        /// <summary>
+        /// Bloom threshold parameter
+        /// </summary>
+        private float _bloomThreshold = 0.3f;
+        
+        /// <summary>
+        /// Bloom blur amount parameter
+        /// </summary>
+        private float _bloomBlurAmount = 4.0f;
+        
         //===== Animation Properties =====//
         
         /// <summary>
@@ -67,6 +94,11 @@ namespace MGCustomDrawingPipeline
         /// Determines how triangles are drawn (front/back face rendering)
         /// </summary>
         private RasterizerState _doubleSidedRasterizerState;
+        
+        /// <summary>
+        /// Toggle between normal rendering and post-processing
+        /// </summary>
+        private bool _usePostProcessing = false;
         #endregion
 
         /// <summary>
@@ -133,6 +165,9 @@ namespace MGCustomDrawingPipeline
             // Create a new SpriteBatch for drawing 2D graphics (not used in this demo)
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
+            // Create render targets for post-processing
+            CreateRenderTargets();
+
             //===== BEGINNER NOTE: What are Vertices? =====//
             // Vertices are points in 3D space that define the corners of 3D shapes.
             // Each vertex can have additional properties like color, texture coordinates, etc.
@@ -187,6 +222,29 @@ namespace MGCustomDrawingPipeline
             // Our shader is defined in the TriangleShader.fx file and compiled
             // during the content build process
             _triangleEffect = Content.Load<Effect>("TriangleShader");
+            
+            // Load the bloom post-processing shader
+            _bloomEffect = Content.Load<Effect>("BloomShader");
+        }
+        
+        /// <summary>
+        /// Creates the render targets used for post-processing
+        /// </summary>
+        private void CreateRenderTargets()
+        {
+            // Get the current display size
+            int width = GraphicsDevice.PresentationParameters.BackBufferWidth;
+            int height = GraphicsDevice.PresentationParameters.BackBufferHeight;
+            
+            // Create the main scene render target - using Color format for now
+            // We'll switch to HDR format once basic rendering is working
+            _sceneRenderTarget = new RenderTarget2D(
+                GraphicsDevice,
+                width,
+                height,
+                false,
+                SurfaceFormat.Color, // Use standard color format first
+                DepthFormat.Depth24Stencil8);
         }
 
         /// <summary>
@@ -195,6 +253,18 @@ namespace MGCustomDrawingPipeline
         /// <param name="gameTime">Provides a snapshot of timing values</param>
         protected override void Update(GameTime gameTime)
         {
+            // Check for keyboard input
+            KeyboardState keyboardState = Keyboard.GetState();
+            
+            // Toggle post-processing with P key
+            if (keyboardState.IsKeyDown(Keys.P) && !_previousKeyboardState.IsKeyDown(Keys.P))
+            {
+                _usePostProcessing = !_usePostProcessing;
+            }
+            
+            // Store current keyboard state for next frame
+            _previousKeyboardState = keyboardState;
+            
             //===== BEGINNER NOTE: Time-Based Animation =====//
             // To make animations smooth regardless of frame rate, we adjust
             // changes based on how much time has passed since the last frame
@@ -218,6 +288,7 @@ namespace MGCustomDrawingPipeline
             // Always call the base class Update method
             base.Update(gameTime);
         }
+        private KeyboardState _previousKeyboardState;
 
         /// <summary>
         /// Draws the game content to the screen
@@ -225,13 +296,52 @@ namespace MGCustomDrawingPipeline
         /// <param name="gameTime">Provides a snapshot of timing values</param>
         protected override void Draw(GameTime gameTime)
         {
-            // Clear the screen to blue before drawing anything new
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            if (_usePostProcessing)
+            {
+                // Draw to render target first
+                DrawSceneToRenderTarget();
+                
+                // Then draw the render target to the screen
+                GraphicsDevice.SetRenderTarget(null);
+                GraphicsDevice.Clear(Color.Black);
+                
+                // Just draw the render target directly to the screen for now
+                _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
+                _spriteBatch.Draw(_sceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+                _spriteBatch.End();
+            }
+            else
+            {
+                // Draw directly to the screen
+                GraphicsDevice.SetRenderTarget(null);
+                GraphicsDevice.Clear(Color.CornflowerBlue);
+                DrawTriangle();
+            }
 
-            //===== BEGINNER NOTE: 3D Rendering Setup =====//
-            // Before drawing 3D objects, we need to configure how the graphics
-            // pipeline will process our geometry
+            // Always call the base class Draw method
+            base.Draw(gameTime);
+        }
+        
+        /// <summary>
+        /// Draws the triangle scene to the scene render target
+        /// </summary>
+        private void DrawSceneToRenderTarget()
+        {
+            // Set the render target to draw to our scene texture
+            GraphicsDevice.SetRenderTarget(_sceneRenderTarget);
             
+            // Clear the render target with dark blue color
+            GraphicsDevice.Clear(Color.CornflowerBlue);
+            
+            // Draw the triangle
+            DrawTriangle();
+        }
+        
+        /// <summary>
+        /// Draws the rotating triangle
+        /// </summary>
+        private void DrawTriangle()
+        {
             // Apply our double-sided rendering settings so triangle is visible from both sides
             GraphicsDevice.RasterizerState = _doubleSidedRasterizerState;
 
@@ -239,19 +349,12 @@ namespace MGCustomDrawingPipeline
             GraphicsDevice.SetVertexBuffer(_vertexBuffer);
             GraphicsDevice.Indices = _indexBuffer;
 
-            //===== BEGINNER NOTE: 3D Transformation Matrices =====//
-            // To position and transform 3D objects, we use matrices:
-            // 1. World matrix - positions objects in the 3D world
-            // 2. View matrix - positions the camera in the world
-            // 3. Projection matrix - handles perspective (things get smaller in distance)
-            
             // Create a world matrix that combines rotations around all three axes
             Matrix world = Matrix.CreateRotationX(_rotationAngleX) * 
                           Matrix.CreateRotationY(_rotationAngleY) * 
                           Matrix.CreateRotationZ(_rotationAngleZ);
             
             // Create a view matrix - this is like placing a camera in the world
-            // Parameters: camera position, target to look at, up direction
             Matrix view = Matrix.CreateLookAt(
                 new Vector3(0, 0, 2),  // Camera position: 2 units away from origin
                 Vector3.Zero,          // Looking at the origin (0,0,0)
@@ -264,31 +367,20 @@ namespace MGCustomDrawingPipeline
                 0.1f,                                  // Near clipping plane (min render distance)
                 100.0f);                               // Far clipping plane (max render distance)
 
-            //===== BEGINNER NOTE: Passing Data to Shaders =====//
-            // Shaders need information from our C# code to work correctly
-            // Here we pass the combined transformation matrix to the shader
-            // This matrix will be used to position our triangle vertices
+            // Send the transformation matrix to the shader
             _triangleEffect.Parameters["WorldViewProjection"].SetValue(world * view * projection);
 
-            //===== BEGINNER NOTE: Drawing with Shaders =====//
-            // Shaders can have multiple "passes" - ways of rendering the same object
-            // We need to loop through each pass and apply it before drawing
+            // Draw the triangle using our shader
             foreach (EffectPass pass in _triangleEffect.CurrentTechnique.Passes)
             {
-                // Apply this shader pass
                 pass.Apply();
-
-                // Draw the triangle using our vertex and index data
                 GraphicsDevice.DrawIndexedPrimitives(
-                    PrimitiveType.TriangleList,  // Drawing triangles (not lines or points)
-                    0,       // Base vertex offset (first vertex to use)
-                    0,       // Start index (first index to use)
-                    1        // Number of triangles to draw
+                    PrimitiveType.TriangleList,
+                    0,       // Base vertex offset
+                    0,       // Start index
+                    1        // Number of triangles
                 );
             }
-
-            // Always call the base class Draw method
-            base.Draw(gameTime);
         }
 
         /// <summary>
@@ -303,6 +395,9 @@ namespace MGCustomDrawingPipeline
             _vertexBuffer?.Dispose();
             _indexBuffer?.Dispose();
             _doubleSidedRasterizerState?.Dispose();
+            
+            // Dispose the render target
+            _sceneRenderTarget?.Dispose();
             
             // Always call the base class UnloadContent method
             base.UnloadContent();

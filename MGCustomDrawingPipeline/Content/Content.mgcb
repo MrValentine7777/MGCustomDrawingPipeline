@@ -1,11 +1,10 @@
-
 #----------------------------- Global Properties ----------------------------#
 
 /outputDir:bin/$(Platform)
 /intermediateDir:obj/$(Platform)
 /platform:Windows
 /config:
-/profile:Reach
+/profile:HiDef
 /compress:False
 
 #-------------------------------- References --------------------------------#
@@ -18,4 +17,10 @@
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:TriangleShader.fx
+
+#begin BloomShader.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:BloomShader.fx
 
