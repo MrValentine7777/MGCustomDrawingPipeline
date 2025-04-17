@@ -73,6 +73,31 @@ namespace MGCustomDrawingPipeline
         /// </summary>
         private float _bloomBlurAmount = 4.0f;
         
+        /// <summary>
+        /// Render target for bloom extraction
+        /// </summary>
+        private RenderTarget2D _bloomExtractTarget;
+        
+        /// <summary>
+        /// Render target for horizontal blur
+        /// </summary>
+        private RenderTarget2D _bloomHorizontalBlurTarget;
+        
+        /// <summary>
+        /// Render target for vertical blur
+        /// </summary>
+        private RenderTarget2D _bloomVerticalBlurTarget;
+        
+        /// <summary>
+        /// Sensitivity for green color bloom extraction
+        /// </summary>
+        private float _colorSensitivity = 0.25f;
+        
+        /// <summary>
+        /// Target green color for bloom extraction
+        /// </summary>
+        private Vector3 _targetGreenColor = new Vector3(34.0f / 255.0f, 139.0f / 255.0f, 34.0f / 255.0f); // Forest green
+        
         //===== Animation Properties =====//
         
         /// <summary>
@@ -202,14 +227,38 @@ namespace MGCustomDrawingPipeline
             int height = GraphicsDevice.PresentationParameters.BackBufferHeight;
             
             // Create the main scene render target - using Color format for now
-            // We'll switch to HDR format once basic rendering is working
             _sceneRenderTarget = new RenderTarget2D(
                 GraphicsDevice,
                 width,
                 height,
                 false,
-                SurfaceFormat.Color, // Use standard color format first
+                SurfaceFormat.Color, // Use standard color format
                 DepthFormat.Depth24Stencil8);
+                
+            // Create additional render targets for the bloom effect
+            _bloomExtractTarget = new RenderTarget2D(
+                GraphicsDevice,
+                width,
+                height,
+                false,
+                SurfaceFormat.Color,
+                DepthFormat.None);
+                
+            _bloomHorizontalBlurTarget = new RenderTarget2D(
+                GraphicsDevice,
+                width,
+                height,
+                false,
+                SurfaceFormat.Color,
+                DepthFormat.None);
+                
+            _bloomVerticalBlurTarget = new RenderTarget2D(
+                GraphicsDevice,
+                width,
+                height,
+                false,
+                SurfaceFormat.Color,
+                DepthFormat.None);
         }
 
         /// <summary>
@@ -418,27 +467,25 @@ namespace MGCustomDrawingPipeline
         {
             if (_usePostProcessing)
             {
-                // Draw to render target first
+                // Draw scene with bloom effect
                 DrawSceneToRenderTarget();
                 
-                // Then draw the render target to the screen
+                // Draw the final result to the screen
                 GraphicsDevice.SetRenderTarget(null);
                 GraphicsDevice.Clear(Color.Black);
                 
-                // Just draw the render target directly to the screen for now
-                _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
+                _spriteBatch.Begin();
                 _spriteBatch.Draw(_sceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
                 _spriteBatch.End();
             }
             else
             {
-                // Draw directly to the screen
+                // Draw directly to the screen without post-processing
                 GraphicsDevice.SetRenderTarget(null);
                 GraphicsDevice.Clear(Color.CornflowerBlue);
                 DrawTree();
             }
 
-            // Always call the base class Draw method
             base.Draw(gameTime);
         }
         
@@ -447,14 +494,76 @@ namespace MGCustomDrawingPipeline
         /// </summary>
         private void DrawSceneToRenderTarget()
         {
-            // Set the render target to draw to our scene texture
+            // STEP 1: Render the scene to the main render target
+            GraphicsDevice.SetRenderTarget(_sceneRenderTarget);
+            GraphicsDevice.Clear(Color.CornflowerBlue);
+            DrawTree();
+            
+            // STEP 2: Extract the bright green pixels
+            GraphicsDevice.SetRenderTarget(_bloomExtractTarget);
+            GraphicsDevice.Clear(Color.Black);
+            
+            // Set bloom shader parameters
+            _bloomEffect.Parameters["InputTexture"].SetValue(_sceneRenderTarget);
+            _bloomEffect.Parameters["BloomThreshold"].SetValue(_bloomThreshold);
+            _bloomEffect.Parameters["TargetColor"].SetValue(_targetGreenColor);
+            _bloomEffect.Parameters["ColorSensitivity"].SetValue(_colorSensitivity);
+            _bloomEffect.Parameters["ScreenSize"].SetValue(new Vector2(
+                GraphicsDevice.Viewport.Width, 
+                GraphicsDevice.Viewport.Height));
+            
+            // Apply the green bloom extraction technique
+            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
+            _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["GreenBloomExtract"];
+            _bloomEffect.CurrentTechnique.Passes[0].Apply();
+            _spriteBatch.Draw(_sceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+            _spriteBatch.End();
+            
+            // STEP 3: Apply horizontal blur to the extracted brightness
+            GraphicsDevice.SetRenderTarget(_bloomHorizontalBlurTarget);
+            GraphicsDevice.Clear(Color.Black);
+            
+            // Set blur parameters for horizontal pass
+            _bloomEffect.Parameters["InputTexture"].SetValue(_bloomExtractTarget);
+            _bloomEffect.Parameters["BlurAmount"].SetValue(_bloomBlurAmount);
+            _bloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(1, 0));
+            
+            // Apply the gaussian blur technique
+            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
+            _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["GaussianBlur"];
+            _bloomEffect.CurrentTechnique.Passes[0].Apply();
+            _spriteBatch.Draw(_bloomExtractTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+            _spriteBatch.End();
+            
+            // STEP 4: Apply vertical blur to the horizontal blur result
+            GraphicsDevice.SetRenderTarget(_bloomVerticalBlurTarget);
+            GraphicsDevice.Clear(Color.Black);
+            
+            // Set blur parameters for vertical pass
+            _bloomEffect.Parameters["InputTexture"].SetValue(_bloomHorizontalBlurTarget);
+            _bloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(0, 1));
+            
+            // Apply the gaussian blur technique again
+            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
+            _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["GaussianBlur"];
+            _bloomEffect.CurrentTechnique.Passes[0].Apply();
+            _spriteBatch.Draw(_bloomHorizontalBlurTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+            _spriteBatch.End();
+            
+            // STEP 5: Combine the original scene with the bloom effect
             GraphicsDevice.SetRenderTarget(_sceneRenderTarget);
             
-            // Clear the render target with dark blue color
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            // Set combine parameters
+            _bloomEffect.Parameters["BaseTexture"].SetValue(_sceneRenderTarget);
+            _bloomEffect.Parameters["BloomTexture"].SetValue(_bloomVerticalBlurTarget);
+            _bloomEffect.Parameters["BloomIntensity"].SetValue(_bloomIntensity);
             
-            // Draw the tree
-            DrawTree();
+            // Apply the bloom combine technique
+            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
+            _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["BloomCombine"];
+            _bloomEffect.CurrentTechnique.Passes[0].Apply();
+            _spriteBatch.Draw(_sceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+            _spriteBatch.End();
         }
         
         /// <summary>
@@ -517,8 +626,11 @@ namespace MGCustomDrawingPipeline
             _indexBuffer?.Dispose();
             _doubleSidedRasterizerState?.Dispose();
             
-            // Dispose the render target
+            // Dispose the render targets
             _sceneRenderTarget?.Dispose();
+            _bloomExtractTarget?.Dispose();
+            _bloomHorizontalBlurTarget?.Dispose();
+            _bloomVerticalBlurTarget?.Dispose();
             
             // Always call the base class UnloadContent method
             base.UnloadContent();

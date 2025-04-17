@@ -66,6 +66,12 @@ float2 BlurDirection;
 // Screen texture size (used for correct pixel sampling)
 float2 ScreenSize;
 
+// Target color to bloom (for color-specific bloom)
+float3 TargetColor = float3(34.0f/255.0f, 139.0f/255.0f, 34.0f/255.0f); // Forest green
+
+// Color sensitivity (how close to the target color a pixel needs to be to bloom)
+float ColorSensitivity = 0.25f;
+
 //======================================================================
 // HELPER FUNCTIONS
 //======================================================================
@@ -81,6 +87,16 @@ float CalcGaussianWeight(int sampleDistance)
     float sigma = BlurAmount;
     float g = 1.0f / sqrt(2.0f * 3.14159f * sigma * sigma);
     return g * exp(-(sampleDistance * sampleDistance) / (2 * sigma * sigma));
+}
+
+// Helper function to calculate how close a color is to the target color
+float ColorSimilarity(float3 color, float3 targetColor)
+{
+    // Normalized color distance (0 = identical, 1 = maximally different)
+    float distance = length(color - targetColor);
+    
+    // Invert and scale to create a similarity factor (1 = identical, 0 = maximally different)
+    return saturate(1.0f - distance / ColorSensitivity);
 }
 
 //======================================================================
@@ -111,6 +127,29 @@ float4 BloomExtractPS(float2 texCoord : TEXCOORD0) : COLOR0
     
     // Return the color if it's bright enough, otherwise black (no bloom)
     return color * brightness;
+}
+
+//======================================================================
+// GREEN COLOR BLOOM EXTRACT PIXEL SHADER
+//======================================================================
+// This shader extracts specifically green colors for bloom
+float4 GreenBloomExtractPS(float2 texCoord : TEXCOORD0) : COLOR0
+{
+    // Sample the original scene texture
+    float4 color = tex2D(InputSampler, texCoord);
+    
+    // Calculate how similar this pixel is to our target green color
+    float similarity = ColorSimilarity(color.rgb, TargetColor);
+    
+    // Calculate brightness, factoring in the color similarity
+    float brightness = dot(color.rgb, float3(0.299f, 0.587f, 0.114f));
+    brightness = max(0, brightness - BloomThreshold);
+    
+    // Apply stronger bloom to colors that are closer to our target green
+    float bloomFactor = brightness * similarity;
+    
+    // Return the color with the bloom factor applied
+    return color * bloomFactor;
 }
 
 //======================================================================
@@ -185,6 +224,15 @@ technique BloomExtract
     {
         VertexShader = compile VS_SHADERMODEL VertexShaderFunction();
         PixelShader = compile PS_SHADERMODEL BloomExtractPS();
+    }
+}
+
+technique GreenBloomExtract
+{
+    pass Pass1
+    {
+        VertexShader = compile VS_SHADERMODEL VertexShaderFunction();
+        PixelShader = compile PS_SHADERMODEL GreenBloomExtractPS();
     }
 }
 
