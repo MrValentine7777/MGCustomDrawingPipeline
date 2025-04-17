@@ -1,12 +1,3 @@
-//======================================================================
-// BLOOM SHADER EFFECT
-//======================================================================
-// This shader implements a bloom post-processing effect that makes
-// bright areas of the image glow. It uses a three-step process:
-// 1. Extract bright areas from the source image (BloomExtract)
-// 2. Blur the bright areas using a two-pass gaussian blur (GaussianBlur)
-// 3. Combine the blurred bright areas with the original image (BloomCombine)
-
 #if OPENGL
 #define VS_SHADERMODEL vs_3_0
 #define PS_SHADERMODEL ps_3_0
@@ -176,6 +167,34 @@ float4 BlueBloomExtractPS(float2 texCoord : TEXCOORD0) : COLOR0
 }
 
 //======================================================================
+// SUNLIGHT BLOOM EXTRACT PIXEL SHADER
+//======================================================================
+// This shader extracts areas affected by sunlight for bloom effect
+float4 SunlightBloomExtractPS(float2 texCoord : TEXCOORD0) : COLOR0
+{
+    // Sample the original scene texture
+    float4 color = tex2D(InputSampler, texCoord);
+    
+    // Calculate brightness using luminance
+    float brightness = dot(color.rgb, float3(0.299f, 0.587f, 0.114f));
+    
+    // Target warmer colors (sunlight tends to be yellowish)
+    float3 sunlightColor = float3(1.0f, 0.9f, 0.7f);
+    
+    // Calculate how similar this pixel is to our target sunlight color
+    float similarity = ColorSimilarity(color.rgb, sunlightColor);
+    
+    // Calculate brightness, factoring in the color similarity
+    brightness = max(0, brightness - BloomThreshold * 0.5f); // Lower threshold for sunlight
+    
+    // Apply stronger bloom to colors that are closer to our sunlight color
+    float bloomFactor = brightness * similarity * 1.5f; // Intensify sunlight bloom
+    
+    // Return the color with the bloom factor applied
+    return color * bloomFactor;
+}
+
+//======================================================================
 // GAUSSIAN BLUR PIXEL SHADER
 //======================================================================
 // This shader applies a one-dimensional gaussian blur in either the horizontal
@@ -265,6 +284,15 @@ technique BlueBloomExtract
     {
         VertexShader = compile VS_SHADERMODEL VertexShaderFunction();
         PixelShader = compile PS_SHADERMODEL BlueBloomExtractPS();
+    }
+}
+
+technique SunlightBloomExtract
+{
+    pass Pass1
+    {
+        VertexShader = compile VS_SHADERMODEL VertexShaderFunction();
+        PixelShader = compile PS_SHADERMODEL SunlightBloomExtractPS();
     }
 }
 

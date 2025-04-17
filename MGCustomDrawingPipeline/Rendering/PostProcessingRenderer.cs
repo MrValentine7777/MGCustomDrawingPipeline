@@ -21,22 +21,22 @@ namespace MGCustomDrawingPipeline.Rendering
             graphicsDevice.Clear(Color.CornflowerBlue);
             treeRenderer.DrawTree(graphicsDevice, state);
             
-            // STEP 2: Extract the blue colors from the scene into a separate render target
+            // STEP 2: Extract the sunlight-affected areas from the scene
             graphicsDevice.SetRenderTarget(state.BloomExtractTarget);
             graphicsDevice.Clear(Color.Black);
             
-            // Configure the shader parameters for blue color extraction
+            // Configure the shader parameters for sunlight extraction
             state.BloomEffect.Parameters["InputTexture"].SetValue(state.SceneRenderTarget);
             state.BloomEffect.Parameters["BloomThreshold"].SetValue(state.BloomThreshold);
-            state.BloomEffect.Parameters["TargetColor"].SetValue(state.TargetBlueColor);
+            state.BloomEffect.Parameters["TargetColor"].SetValue(state.SunlightColor);
             state.BloomEffect.Parameters["ColorSensitivity"].SetValue(state.ColorSensitivity);
             state.BloomEffect.Parameters["ScreenSize"].SetValue(new Vector2(
                 graphicsDevice.Viewport.Width, 
                 graphicsDevice.Viewport.Height));
             
-            // Apply the blue bloom extraction shader technique
+            // Apply the sunlight bloom extraction shader technique
             state.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
-            state.BloomEffect.CurrentTechnique = state.BloomEffect.Techniques["BlueBloomExtract"];
+            state.BloomEffect.CurrentTechnique = state.BloomEffect.Techniques["SunlightBloomExtract"];
             state.BloomEffect.CurrentTechnique.Passes[0].Apply();
             state.SpriteBatch.Draw(state.SceneRenderTarget, graphicsDevice.Viewport.Bounds, Color.White);
             state.SpriteBatch.End();

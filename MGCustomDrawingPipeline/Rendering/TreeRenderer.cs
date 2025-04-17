@@ -43,23 +43,20 @@ namespace MGCustomDrawingPipeline.Rendering
                 0.1f,                                  // Near clipping plane (min render distance)
                 100.0f);                               // Far clipping plane (max render distance)
 
-            // Send the transformation matrix to the shader
+            // Send the transformation matrices to the shader
             state.TriangleEffect.Parameters["WorldViewProjection"].SetValue(world * view * projection);
+            state.TriangleEffect.Parameters["World"].SetValue(world);
             
-            // Check if the lighting parameters exist in the shader
-            if (state.TriangleEffect.Parameters["World"] != null)
-            {
-                // Send world matrix to the shader
-                state.TriangleEffect.Parameters["World"].SetValue(world);
-                
-                // Send lighting parameters to the shader
-                state.TriangleEffect.Parameters["LightDirection"].SetValue(state.LightDirection);
-                state.TriangleEffect.Parameters["CameraPosition"].SetValue(state.CameraPosition);
-                state.TriangleEffect.Parameters["AmbientLight"].SetValue(state.AmbientLight);
-                state.TriangleEffect.Parameters["DiffuseLight"].SetValue(state.DiffuseLight);
-                state.TriangleEffect.Parameters["SpecularLight"].SetValue(state.SpecularLight);
-                state.TriangleEffect.Parameters["SpecularPower"].SetValue(state.SpecularPower);
-            }
+            // Send lighting parameters to the shader
+            state.TriangleEffect.Parameters["LightDirection"].SetValue(state.LightDirection);
+            state.TriangleEffect.Parameters["SunlightDirection"].SetValue(state.SunlightDirection);
+            state.TriangleEffect.Parameters["CameraPosition"].SetValue(state.CameraPosition);
+            state.TriangleEffect.Parameters["AmbientLight"].SetValue(state.AmbientLight);
+            state.TriangleEffect.Parameters["DiffuseLight"].SetValue(state.DiffuseLight);
+            state.TriangleEffect.Parameters["SunlightColor"].SetValue(state.SunlightColor);
+            state.TriangleEffect.Parameters["SunlightIntensity"].SetValue(state.SunlightIntensity);
+            state.TriangleEffect.Parameters["SpecularLight"].SetValue(state.SpecularLight);
+            state.TriangleEffect.Parameters["SpecularPower"].SetValue(state.SpecularPower);
             
             // First draw the trunk
             state.TriangleEffect.Parameters["ModelTexture"].SetValue(state.TrunkTexture);

@@ -58,6 +58,11 @@ namespace MGCustomDrawingPipeline
         public Vector3 LightDirection { get; set; } = Vector3.Normalize(new Vector3(1, -1, -1));
 
         /// <summary>
+        /// Direction of the sunlight in the scene (normalized)
+        /// </summary>
+        public Vector3 SunlightDirection { get; set; } = Vector3.Normalize(new Vector3(-0.5f, -1, 0.2f));
+
+        /// <summary>
         /// Ambient light color and intensity
         /// </summary>
         public Vector3 AmbientLight { get; set; } = new Vector3(0.2f, 0.2f, 0.2f);
@@ -65,7 +70,17 @@ namespace MGCustomDrawingPipeline
         /// <summary>
         /// Diffuse light color and intensity
         /// </summary>
-        public Vector3 DiffuseLight { get; set; } = new Vector3(0.7f, 0.7f, 0.7f);
+        public Vector3 DiffuseLight { get; set; } = new Vector3(0.5f, 0.5f, 0.5f);
+
+        /// <summary>
+        /// Sunlight color and intensity
+        /// </summary>
+        public Vector3 SunlightColor { get; set; } = new Vector3(1.0f, 0.9f, 0.7f);
+
+        /// <summary>
+        /// Sunlight intensity
+        /// </summary>
+        public float SunlightIntensity { get; set; } = 0.8f;
 
         /// <summary>
         /// Specular light color and intensity
