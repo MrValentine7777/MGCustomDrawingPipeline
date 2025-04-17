@@ -50,6 +50,7 @@ This project was created to:
 2. Open the solution file in Visual Studio
 3. Build and run the project (F5)
 4. Press 'P' key to toggle the bloom post-processing effect
+5. Press 'W' key to toggle wireframe mode to see the 3D structure of the model
 
 ### Troubleshooting
 If you see a black screen after pressing 'P' to enable post-processing:

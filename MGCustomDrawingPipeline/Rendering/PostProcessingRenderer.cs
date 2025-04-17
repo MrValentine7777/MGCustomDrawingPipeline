@@ -13,6 +13,9 @@ namespace MGCustomDrawingPipeline.Rendering
         /// </summary>
         public static void DrawSceneToRenderTarget(GraphicsDevice graphicsDevice, GameState state, TreeRenderer treeRenderer)
         {
+            // Use the wireframe setting from state for consistent rendering in both standard and post-processed modes
+            // (No actual code changes needed here since this method calls TreeRenderer.DrawTree which already uses the wireframe setting)
+
             // STEP 1: Render the tree scene to the main render target
             graphicsDevice.SetRenderTarget(state.SceneRenderTarget);
             graphicsDevice.Clear(Color.CornflowerBlue);

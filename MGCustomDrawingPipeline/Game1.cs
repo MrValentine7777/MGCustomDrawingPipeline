@@ -84,6 +84,13 @@ namespace MGCustomDrawingPipeline
                 FillMode = FillMode.Solid  
             };
 
+            // Create a wireframe rasterizer state for showing the model structure
+            _state.WireframeRasterizerState = new RasterizerState
+            {
+                CullMode = CullMode.None,  // Show both front and back faces
+                FillMode = FillMode.WireFrame  // Only draw the edges of triangles
+            };
+
             // Always call the base class Initialize method
             base.Initialize();
         }
@@ -168,6 +175,7 @@ namespace MGCustomDrawingPipeline
             _state.VertexBuffer?.Dispose();
             _state.IndexBuffer?.Dispose();
             _state.DoubleSidedRasterizerState?.Dispose();
+            _state.WireframeRasterizerState?.Dispose();
             
             // Dispose textures
             _state.TrunkTexture?.Dispose();

@@ -16,7 +16,7 @@ namespace MGCustomDrawingPipeline.Rendering
         public static void CreateTreeModel(GraphicsDevice graphicsDevice, GameState state)
         {
             // Define the tree components
-            (MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture[] vertices, short[] indices) = GenerateTree();
+            (CustomVertexPositionNormalTexture[] vertices, short[] indices) = GenerateTree();
             state.TotalVertices = vertices.Length;
             state.TotalIndices = indices.Length;
             state.TotalTriangles = indices.Length / 3;
@@ -24,7 +24,7 @@ namespace MGCustomDrawingPipeline.Rendering
             // Create vertex buffer
             state.VertexBuffer = new VertexBuffer(
                 graphicsDevice,
-                MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture.VertexDeclaration,
+                CustomVertexPositionNormalTexture.VertexDeclaration,
                 state.TotalVertices,
                 BufferUsage.WriteOnly);
             state.VertexBuffer.SetData(vertices);
@@ -39,12 +39,12 @@ namespace MGCustomDrawingPipeline.Rendering
         }
 
         /// <summary>
-        /// Generates vertices and indices for a simple tree
+        /// Generates vertices and indices for a simple tree with normals for shading
         /// </summary>
-        private static (MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture[] vertices, short[] indices) GenerateTree()
+        private static (CustomVertexPositionNormalTexture[] vertices, short[] indices) GenerateTree()
         {
             // Create a list to hold all vertices and indices
-            var verticesList = new List<MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture>();
+            var verticesList = new List<CustomVertexPositionNormalTexture>();
             var indicesList = new List<short>();
             
             // For 1x1 textures, we can use any texture coordinate
@@ -56,30 +56,30 @@ namespace MGCustomDrawingPipeline.Rendering
             float trunkWidth = 0.1f;
             float trunkHeight = 0.5f;
             
-            // Trunk vertices (bottom square)
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, -trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, -trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, trunkWidth), texCoord));
+            // Trunk vertices (bottom square) with outward-facing normals
+            verticesList.Add(new CustomVertexPositionNormalTexture(trunkBase + new Vector3(-trunkWidth, 0, -trunkWidth), Vector3.Normalize(new Vector3(-1, -1, -1)), texCoord));
+            verticesList.Add(new CustomVertexPositionNormalTexture(trunkBase + new Vector3(trunkWidth, 0, -trunkWidth), Vector3.Normalize(new Vector3(1, -1, -1)), texCoord));
+            verticesList.Add(new CustomVertexPositionNormalTexture(trunkBase + new Vector3(trunkWidth, 0, trunkWidth), Vector3.Normalize(new Vector3(1, -1, 1)), texCoord));
+            verticesList.Add(new CustomVertexPositionNormalTexture(trunkBase + new Vector3(-trunkWidth, 0, trunkWidth), Vector3.Normalize(new Vector3(-1, -1, 1)), texCoord));
             
-            // Trunk vertices (top square)
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, -trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, -trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, trunkWidth), texCoord));
+            // Trunk vertices (top square) with outward-facing normals
+            verticesList.Add(new CustomVertexPositionNormalTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, -trunkWidth), Vector3.Normalize(new Vector3(-1, 1, -1)), texCoord));
+            verticesList.Add(new CustomVertexPositionNormalTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, -trunkWidth), Vector3.Normalize(new Vector3(1, 1, -1)), texCoord));
+            verticesList.Add(new CustomVertexPositionNormalTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, trunkWidth), Vector3.Normalize(new Vector3(1, 1, 1)), texCoord));
+            verticesList.Add(new CustomVertexPositionNormalTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, trunkWidth), Vector3.Normalize(new Vector3(-1, 1, 1)), texCoord));
             
             // Trunk indices (6 faces, 2 triangles per face = 12 triangles)
-            // Bottom face
-            AddQuad(indicesList, 0, 1, 2, 3);
+            // Bottom face (normal facing down)
+            AddQuadWithNormals(verticesList, indicesList, 0, 1, 2, 3, Vector3.Down);
             
-            // Top face
-            AddQuad(indicesList, 7, 6, 5, 4);
+            // Top face (normal facing up)
+            AddQuadWithNormals(verticesList, indicesList, 7, 6, 5, 4, Vector3.Up);
             
             // Side faces
-            AddQuad(indicesList, 0, 4, 5, 1);
-            AddQuad(indicesList, 1, 5, 6, 2);
-            AddQuad(indicesList, 2, 6, 7, 3);
-            AddQuad(indicesList, 3, 7, 4, 0);
+            AddQuadWithNormals(verticesList, indicesList, 0, 4, 5, 1, Vector3.Backward);
+            AddQuadWithNormals(verticesList, indicesList, 1, 5, 6, 2, Vector3.Right);
+            AddQuadWithNormals(verticesList, indicesList, 2, 6, 7, 3, Vector3.Forward);
+            AddQuadWithNormals(verticesList, indicesList, 3, 7, 4, 0, Vector3.Left);
             
             // 2. Create pyramid-like foliage (a simple cone approximation)
             int baseVertex = verticesList.Count;
@@ -89,7 +89,7 @@ namespace MGCustomDrawingPipeline.Rendering
             Vector3 leafTop = leafBase + new Vector3(0, leafHeight, 0);
             
             // Add the top vertex of the cone
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafTop, texCoord));
+            verticesList.Add(new CustomVertexPositionNormalTexture(leafTop, Vector3.Up, texCoord));
             
             // Add vertices in a circle for the base of the cone
             int leafSegments = 8;
@@ -99,21 +99,41 @@ namespace MGCustomDrawingPipeline.Rendering
                 float x = (float)System.Math.Sin(angle) * leafRadius;
                 float z = (float)System.Math.Cos(angle) * leafRadius;
                 
-                verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
+                // Calculate normal for each vertex pointing outward and upward
+                Vector3 normal = Vector3.Normalize(new Vector3(x, 0.5f, z));
+                
+                verticesList.Add(new CustomVertexPositionNormalTexture(leafBase + new Vector3(x, 0, z), normal, texCoord));
             }
             
             // Add triangles connecting the top to each segment of the circle
             for (int i = 0; i < leafSegments; i++)
             {
                 int next = (i + 1) % leafSegments;
-                indicesList.Add((short)baseVertex); // Top vertex
-                indicesList.Add((short)(baseVertex + 1 + i));
-                indicesList.Add((short)(baseVertex + 1 + next));
+                
+                // Calculate face normal for this triangle
+                Vector3 v0 = verticesList[baseVertex].Position;
+                Vector3 v1 = verticesList[baseVertex + 1 + i].Position;
+                Vector3 v2 = verticesList[baseVertex + 1 + next].Position;
+                
+                Vector3 edge1 = v1 - v0;
+                Vector3 edge2 = v2 - v0;
+                Vector3 normal = Vector3.Normalize(Vector3.Cross(edge1, edge2));
+                
+                int topIndex = baseVertex;
+                int index1 = baseVertex + 1 + i;
+                int index2 = baseVertex + 1 + next;
+                
+                indicesList.Add((short)topIndex);
+                indicesList.Add((short)index1);
+                indicesList.Add((short)index2);
             }
             
             // Add the bottom face of the cone (optional, as it's not usually visible)
             for (int i = 1; i < leafSegments - 1; i++)
             {
+                // Calculate face normal (pointing down)
+                Vector3 normal = Vector3.Down;
+                
                 indicesList.Add((short)(baseVertex + 1));
                 indicesList.Add((short)(baseVertex + 1 + i + 1));
                 indicesList.Add((short)(baseVertex + 1 + i));
@@ -126,7 +146,7 @@ namespace MGCustomDrawingPipeline.Rendering
             leafRadius *= 0.7f;
             
             // Add the top vertex of the second cone
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafTop, texCoord));
+            verticesList.Add(new CustomVertexPositionNormalTexture(leafTop, Vector3.Up, texCoord));
             
             // Add vertices in a circle for the base of the second cone
             for (int i = 0; i < leafSegments; i++)
@@ -135,20 +155,64 @@ namespace MGCustomDrawingPipeline.Rendering
                 float x = (float)System.Math.Sin(angle) * leafRadius;
                 float z = (float)System.Math.Cos(angle) * leafRadius;
                 
-                verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
+                // Calculate normal for each vertex pointing outward and upward
+                Vector3 normal = Vector3.Normalize(new Vector3(x, 0.5f, z));
+                
+                verticesList.Add(new CustomVertexPositionNormalTexture(leafBase + new Vector3(x, 0, z), normal, texCoord));
             }
             
             // Add triangles connecting the top to each segment of the circle
             for (int i = 0; i < leafSegments; i++)
             {
                 int next = (i + 1) % leafSegments;
-                indicesList.Add((short)baseVertex); // Top vertex
-                indicesList.Add((short)(baseVertex + 1 + i));
-                indicesList.Add((short)(baseVertex + 1 + next));
+                
+                // Calculate face normal for this triangle
+                Vector3 v0 = verticesList[baseVertex].Position;
+                Vector3 v1 = verticesList[baseVertex + 1 + i].Position;
+                Vector3 v2 = verticesList[baseVertex + 1 + next].Position;
+                
+                Vector3 edge1 = v1 - v0;
+                Vector3 edge2 = v2 - v0;
+                Vector3 normal = Vector3.Normalize(Vector3.Cross(edge1, edge2));
+                
+                int topIndex = baseVertex;
+                int index1 = baseVertex + 1 + i;
+                int index2 = baseVertex + 1 + next;
+                
+                indicesList.Add((short)topIndex);
+                indicesList.Add((short)index1);
+                indicesList.Add((short)index2);
             }
             
             // Convert lists to arrays
             return (verticesList.ToArray(), indicesList.ToArray());
+        }
+        
+        /// <summary>
+        /// Helper method to add indices for a quad (two triangles) with proper normals
+        /// </summary>
+        private static void AddQuadWithNormals(List<CustomVertexPositionNormalTexture> vertices, List<short> indices, 
+                                              int a, int b, int c, int d, Vector3 normal)
+        {
+            // Calculate start index for new vertices
+            int baseIndex = vertices.Count;
+            
+            // Create new vertices with the correct normal for this face
+            Vector2 texCoord = new Vector2(0.5f, 0.5f);
+            vertices.Add(new CustomVertexPositionNormalTexture(vertices[a].Position, normal, texCoord));
+            vertices.Add(new CustomVertexPositionNormalTexture(vertices[b].Position, normal, texCoord));
+            vertices.Add(new CustomVertexPositionNormalTexture(vertices[c].Position, normal, texCoord));
+            vertices.Add(new CustomVertexPositionNormalTexture(vertices[d].Position, normal, texCoord));
+            
+            // First triangle
+            indices.Add((short)(baseIndex + 0));
+            indices.Add((short)(baseIndex + 1));
+            indices.Add((short)(baseIndex + 2));
+            
+            // Second triangle
+            indices.Add((short)(baseIndex + 0));
+            indices.Add((short)(baseIndex + 2));
+            indices.Add((short)(baseIndex + 3));
         }
         
         /// <summary>

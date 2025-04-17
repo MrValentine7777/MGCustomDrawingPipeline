@@ -21,6 +21,12 @@ namespace MGCustomDrawingPipeline.Input
                 state.UsePostProcessing = !state.UsePostProcessing;
             }
             
+            // Toggle wireframe mode with W key
+            if (keyboardState.IsKeyDown(Keys.W) && !state.PreviousKeyboardState.IsKeyDown(Keys.W))
+            {
+                state.UseWireframe = !state.UseWireframe;
+            }
+            
             // Store current keyboard state for next frame
             state.PreviousKeyboardState = keyboardState;
         }

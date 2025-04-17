@@ -52,6 +52,36 @@ namespace MGCustomDrawingPipeline
         /// </summary>
         public Texture2D LeafTexture { get; set; }
         
+        /// <summary>
+        /// Direction of the main light in the scene (normalized)
+        /// </summary>
+        public Vector3 LightDirection { get; set; } = Vector3.Normalize(new Vector3(1, -1, -1));
+
+        /// <summary>
+        /// Ambient light color and intensity
+        /// </summary>
+        public Vector3 AmbientLight { get; set; } = new Vector3(0.2f, 0.2f, 0.2f);
+
+        /// <summary>
+        /// Diffuse light color and intensity
+        /// </summary>
+        public Vector3 DiffuseLight { get; set; } = new Vector3(0.7f, 0.7f, 0.7f);
+
+        /// <summary>
+        /// Specular light color and intensity
+        /// </summary>
+        public Vector3 SpecularLight { get; set; } = new Vector3(0.5f, 0.5f, 0.5f);
+
+        /// <summary>
+        /// Specular power - controls the sharpness of specular highlights
+        /// </summary>
+        public float SpecularPower { get; set; } = 20.0f;
+
+        /// <summary>
+        /// Position of the camera in world space
+        /// </summary>
+        public Vector3 CameraPosition { get; set; } = new Vector3(0, 0, 2);
+        
         //===== Post-Processing Components =====//
         
         /// <summary>
@@ -134,6 +164,16 @@ namespace MGCustomDrawingPipeline
         /// Determines how triangles are drawn (front/back face rendering)
         /// </summary>
         public RasterizerState DoubleSidedRasterizerState { get; set; }
+        
+        /// <summary>
+        /// Determines how triangles are drawn in wireframe mode
+        /// </summary>
+        public RasterizerState WireframeRasterizerState { get; set; }
+        
+        /// <summary>
+        /// Toggle between solid and wireframe rendering
+        /// </summary>
+        public bool UseWireframe { get; set; } = false;
         
         /// <summary>
         /// Toggle between normal rendering and post-processing

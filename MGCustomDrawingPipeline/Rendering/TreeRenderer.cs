@@ -15,7 +15,11 @@ namespace MGCustomDrawingPipeline.Rendering
         {
             // Enable depth testing to correctly handle overlapping triangles
             graphicsDevice.DepthStencilState = DepthStencilState.Default;
-            graphicsDevice.RasterizerState = state.DoubleSidedRasterizerState;
+            
+            // Select the appropriate rasterizer state based on wireframe toggle
+            graphicsDevice.RasterizerState = state.UseWireframe 
+                ? state.WireframeRasterizerState 
+                : state.DoubleSidedRasterizerState;
 
             // Tell the GPU which vertices and indices to use for drawing
             graphicsDevice.SetVertexBuffer(state.VertexBuffer);
@@ -28,9 +32,9 @@ namespace MGCustomDrawingPipeline.Rendering
             
             // Create a view matrix - this is like placing a camera in the world
             Matrix view = Matrix.CreateLookAt(
-                new Vector3(0, 0, 2),  // Camera position: 2 units away from origin
-                Vector3.Zero,          // Looking at the origin (0,0,0)
-                Vector3.Up);           // "Up" direction is +Y axis
+                state.CameraPosition,   // Camera position: 2 units away from origin
+                Vector3.Zero,           // Looking at the origin (0,0,0)
+                Vector3.Up);            // "Up" direction is +Y axis
             
             // Create a projection matrix - this adds perspective effect
             Matrix projection = Matrix.CreatePerspectiveFieldOfView(
@@ -41,6 +45,21 @@ namespace MGCustomDrawingPipeline.Rendering
 
             // Send the transformation matrix to the shader
             state.TriangleEffect.Parameters["WorldViewProjection"].SetValue(world * view * projection);
+            
+            // Check if the lighting parameters exist in the shader
+            if (state.TriangleEffect.Parameters["World"] != null)
+            {
+                // Send world matrix to the shader
+                state.TriangleEffect.Parameters["World"].SetValue(world);
+                
+                // Send lighting parameters to the shader
+                state.TriangleEffect.Parameters["LightDirection"].SetValue(state.LightDirection);
+                state.TriangleEffect.Parameters["CameraPosition"].SetValue(state.CameraPosition);
+                state.TriangleEffect.Parameters["AmbientLight"].SetValue(state.AmbientLight);
+                state.TriangleEffect.Parameters["DiffuseLight"].SetValue(state.DiffuseLight);
+                state.TriangleEffect.Parameters["SpecularLight"].SetValue(state.SpecularLight);
+                state.TriangleEffect.Parameters["SpecularPower"].SetValue(state.SpecularPower);
+            }
             
             // First draw the trunk
             state.TriangleEffect.Parameters["ModelTexture"].SetValue(state.TrunkTexture);
