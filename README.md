@@ -37,7 +37,7 @@ This project was created to:
 - High-precision 24-bit depth buffer with 8-bit stencil
 - DirectX 11 shader model 5.0 for maximum graphical fidelity
 - Color-targeted bloom post-processing effect that makes the blue background glow
-- Enhanced sunlight source with intensified warm-toned bloom effects
+- Enhanced sunlight source with warm-toned bloom effects
 - Multi-pass rendering pipeline utilizing render targets
 - Component-based architecture with dedicated rendering classes
 - Dynamic lighting with diffuse and specular reflections

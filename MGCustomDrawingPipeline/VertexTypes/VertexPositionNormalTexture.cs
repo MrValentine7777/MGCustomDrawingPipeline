@@ -14,33 +14,41 @@ namespace MGCustomDrawingPipeline.VertexTypes
     {
         /// <summary>
         /// The position of the vertex in 3D space (x, y, z)
+        /// This defines where in the world the vertex is located
         /// </summary>
         public Vector3 Position;
         
         /// <summary>
         /// The normal vector perpendicular to the surface at this vertex
         /// Used for lighting calculations - determines how light reflects off the surface
+        /// A normal should typically be normalized (have a length of 1.0)
         /// </summary>
         public Vector3 Normal;
         
         /// <summary>
         /// The texture coordinates (u, v) for mapping textures to this vertex
-        /// In this project, we're using 1x1 textures, so these are mostly used for color
+        /// In this project, we're using 1x1 textures, so these are mostly used for color mapping
+        /// Texture coordinates typically range from 0.0 to 1.0
         /// </summary>
         public Vector2 TextureCoordinate;
         
         /// <summary>
         /// Defines the memory layout of this vertex structure for the GPU
-        /// This tells the graphics hardware how to interpret the vertex data
+        /// This tells the graphics hardware how to interpret the vertex data in memory
+        /// 
+        /// A vertex declaration consists of VertexElement objects that define:
+        /// - The offset in bytes where each component starts
+        /// - The format of each component (Vector2, Vector3, etc.)
+        /// - The semantic usage (what the component represents: Position, Normal, etc.)
         /// </summary>
         public readonly static VertexDeclaration VertexDeclaration = new VertexDeclaration(
             // Position comes first in memory, uses 12 bytes (3 floats x 4 bytes each)
             new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
             
-            // Normal comes next, offset by 12 bytes, uses 12 bytes
+            // Normal comes next, offset by 12 bytes, uses 12 bytes (3 floats x 4 bytes each)
             new VertexElement(sizeof(float) * 3, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
             
-            // Texture coordinate comes last, offset by 24 bytes, uses 8 bytes
+            // Texture coordinate comes last, offset by 24 bytes, uses 8 bytes (2 floats x 4 bytes each)
             new VertexElement(sizeof(float) * 6, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 0)
         );
 
@@ -48,7 +56,7 @@ namespace MGCustomDrawingPipeline.VertexTypes
         /// Constructor for creating a new vertex with position, normal and texture coordinates
         /// </summary>
         /// <param name="position">The 3D position of the vertex</param>
-        /// <param name="normal">The normal vector (should be normalized)</param>
+        /// <param name="normal">The normal vector (should be normalized for best results)</param>
         /// <param name="textureCoordinate">The texture coordinates (u,v)</param>
         public CustomVertexPositionNormalTexture(Vector3 position, Vector3 normal, Vector2 textureCoordinate)
         {
@@ -61,6 +69,7 @@ namespace MGCustomDrawingPipeline.VertexTypes
         /// Implementation of IVertexType interface.
         /// This property allows the MonoGame graphics system to determine the 
         /// vertex declaration when rendering.
+        /// The GPU needs to know how the vertex data is structured in memory to interpret it correctly.
         /// </summary>
         VertexDeclaration IVertexType.VertexDeclaration => VertexDeclaration;
     }

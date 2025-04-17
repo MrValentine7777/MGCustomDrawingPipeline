@@ -33,16 +33,19 @@ namespace MGCustomDrawingPipeline.Rendering
         /// <param name="treeRenderer">The renderer that draws the tree model</param>
         public static void DrawSceneToRenderTarget(GraphicsDevice graphicsDevice, GameState state, TreeRenderer treeRenderer)
         {
-            // Ensure shader is loaded properly
+            //===== BEGINNER'S GUIDE: POST-PROCESSING EFFECTS =====//
+            
+            // First, check if our shader is properly loaded
+            // Post-processing effects require shader programs to work
             if (state.BloomEffect == null)
             {
                 System.Diagnostics.Debug.WriteLine("BloomShader not loaded properly");
                 return;
             }
 
-            // Check if techniques exist by trying to access them directly
-            // Shader techniques are different rendering methods defined in the shader
-            // Each technique serves a specific purpose in our multi-pass bloom effect
+            // A shader might contain multiple "techniques" which are like different recipes
+            // for rendering effects. We need to verify that our shader has all the techniques
+            // we'll need for our bloom effect.
             try
             {
                 // Verify that required techniques exist in the shader
@@ -65,58 +68,60 @@ namespace MGCustomDrawingPipeline.Rendering
 
             try
             {
-                // STEP 1: Render the tree scene to the main render target
-                // This creates our base image that we'll apply effects to
+                //===== STEP 1: RENDER THE SCENE =====//
+                // First, we need to draw our 3D scene to a special texture called a render target
+                // Think of it like taking a photo of our scene that we can then manipulate
                 graphicsDevice.SetRenderTarget(state.SceneRenderTarget);
                 graphicsDevice.Clear(Color.CornflowerBlue);
                 treeRenderer.DrawTree(graphicsDevice, state);
                 
-                // STEP 2: Extract the sunlight-affected areas from the scene
-                // This isolates the areas that should glow based on color and brightness
-                // The extraction shader identifies pixels that match our target sunlight color
+                //===== STEP 2: EXTRACT BRIGHT AREAS =====//
+                // Now we identify which parts of the scene should glow
+                // We're targeting areas that match our sunlight color
                 graphicsDevice.SetRenderTarget(state.BloomExtractTarget);
                 graphicsDevice.Clear(Color.Black);
                 
                 // Configure the shader parameters for sunlight extraction
-                // Each parameter controls how the bloom effect is applied
+                // These tell the shader what to look for when deciding what should glow
                 var bloomEffect = state.BloomEffect;
                 try
                 {
-                    // Set the input texture to our main scene
+                    // Input texture is the scene we just rendered
                     bloomEffect.Parameters["InputTexture"].SetValue(state.SceneRenderTarget);
                     
-                    // Set the bloom threshold - pixels dimmer than this won't bloom
+                    // Threshold determines how bright a pixel needs to be to glow
                     // We use a lower threshold for sunlight to capture more of its glow
                     bloomEffect.Parameters["BloomThreshold"].SetValue(state.BloomThreshold * 0.5f);
                     
-                    // Set the target color we're looking for (warm sunlight tone)
+                    // Target color we're looking for (warm sunlight tone)
+                    // The shader will make pixels close to this color glow more
                     bloomEffect.Parameters["TargetColor"].SetValue(state.SunlightColor);
                     
-                    // Set color sensitivity - controls how strictly we match the target color
-                    // Higher sensitivity means more colors around our target will glow
+                    // Color sensitivity controls how strict the color matching is
+                    // Higher sensitivity means more colors close to our target will glow
                     bloomEffect.Parameters["ColorSensitivity"].SetValue(state.ColorSensitivity * 1.2f);
                     
-                    // Pass the screen dimensions to the shader for correct sampling
+                    // Pass screen dimensions so the shader can correctly sample texels
                     bloomEffect.Parameters["ScreenSize"].SetValue(screenSize);
-                    
-                    System.Diagnostics.Debug.WriteLine("Bloom extraction parameters set successfully");
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Error setting bloom extraction parameters: {ex.Message}");
+                    return;
                 }
                 
-                // Apply the sunlight bloom extraction shader technique
-                // This draws our scene using the extraction shader to isolate bright areas
+                // Apply the extraction shader to create an image containing only
+                // the bright parts that match our sunlight color
                 state.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
                 bloomEffect.CurrentTechnique = bloomEffect.Techniques["SunlightBloomExtract"];
                 bloomEffect.CurrentTechnique.Passes[0].Apply();
                 state.SpriteBatch.Draw(state.SceneRenderTarget, graphicsDevice.Viewport.Bounds, Color.White);
                 state.SpriteBatch.End();
                 
-                // STEP 3: Apply horizontal Gaussian blur
-                // This is the first pass of our two-pass blur algorithm
-                // Gaussian blur creates a soft, natural-looking glow effect
+                //===== STEP 3: HORIZONTAL BLUR =====//
+                // To create a convincing glow, we need to blur the extracted bright areas
+                // We do this in two passes for better quality and performance
+                // First pass blurs horizontally (left-right)
                 graphicsDevice.SetRenderTarget(state.BloomHorizontalBlurTarget);
                 graphicsDevice.Clear(Color.Black);
                 
@@ -129,28 +134,29 @@ namespace MGCustomDrawingPipeline.Rendering
                     bloomEffect.Parameters["BlurAmount"].SetValue(state.BloomBlurAmount * 1.2f);
                     
                     // Set blur direction to horizontal (1,0)
+                    // This vector tells the shader which direction to sample pixels
                     bloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(1, 0));
                     
                     // Pass screen dimensions for proper sampling
                     bloomEffect.Parameters["ScreenSize"].SetValue(screenSize);
-                    
-                    System.Diagnostics.Debug.WriteLine("Horizontal blur parameters set successfully");
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Error setting horizontal blur parameters: {ex.Message}");
+                    return;
                 }
                 
                 // Apply the horizontal blur shader
+                // This creates a horizontally blurred version of our extracted bright areas
                 state.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
                 bloomEffect.CurrentTechnique = bloomEffect.Techniques["GaussianBlur"];
                 bloomEffect.CurrentTechnique.Passes[0].Apply();
                 state.SpriteBatch.Draw(state.BloomExtractTarget, graphicsDevice.Viewport.Bounds, Color.White);
                 state.SpriteBatch.End();
                 
-                // STEP 4: Apply vertical Gaussian blur
-                // Second pass of blur, operating on result of horizontal blur
-                // Two-pass blur is more efficient than a single-pass 2D blur
+                //===== STEP 4: VERTICAL BLUR =====//
+                // Second pass blurs vertically (up-down)
+                // When combined with the horizontal blur, this creates a smooth radial glow
                 graphicsDevice.SetRenderTarget(state.BloomVerticalBlurTarget);
                 graphicsDevice.Clear(Color.Black);
                 
@@ -164,12 +170,11 @@ namespace MGCustomDrawingPipeline.Rendering
                     
                     // Pass screen dimensions for proper sampling
                     bloomEffect.Parameters["ScreenSize"].SetValue(screenSize);
-                    
-                    System.Diagnostics.Debug.WriteLine("Vertical blur parameters set successfully");
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Error setting vertical blur parameters: {ex.Message}");
+                    return;
                 }
                 
                 // Apply the vertical blur shader
@@ -179,29 +184,30 @@ namespace MGCustomDrawingPipeline.Rendering
                 state.SpriteBatch.Draw(state.BloomHorizontalBlurTarget, graphicsDevice.Viewport.Bounds, Color.White);
                 state.SpriteBatch.End();
                 
-                // STEP 5: Combine the original scene with the blurred bloom effect
+                //===== STEP 5: COMBINE ORIGINAL SCENE WITH BLOOM =====//
+                // Finally, we combine the original scene with the blurred glow effect
                 // This creates the final image with the glow effect applied
                 graphicsDevice.SetRenderTarget(state.SceneRenderTarget);
                 
                 try
                 {
-                    // Set the original scene as the base texture
+                    // Set the original scene as the base image
                     bloomEffect.Parameters["BaseTexture"].SetValue(state.SceneRenderTarget);
                     
-                    // Set the blurred glow as the bloom texture to be added
+                    // Set the blurred glow as the bloom texture to be added on top
                     bloomEffect.Parameters["BloomTexture"].SetValue(state.BloomVerticalBlurTarget);
                     
                     // Set bloom intensity - controls how strong the glow effect is
                     bloomEffect.Parameters["BloomIntensity"].SetValue(state.BloomIntensity * 1.3f);
-                    
-                    System.Diagnostics.Debug.WriteLine("Bloom combine parameters set successfully");
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Error setting bloom combine parameters: {ex.Message}");
+                    return;
                 }
                 
-                // Apply the combination shader to produce final image
+                // Apply the combination shader to produce the final image
+                // This adds the glow effect on top of our original scene
                 state.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
                 bloomEffect.CurrentTechnique = bloomEffect.Techniques["BloomCombine"];
                 bloomEffect.CurrentTechnique.Passes[0].Apply();

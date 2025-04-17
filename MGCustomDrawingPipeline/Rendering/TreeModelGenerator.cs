@@ -17,6 +17,8 @@ namespace MGCustomDrawingPipeline.Rendering
         /// <param name="state">The game state to store the created buffers</param>
         public static void CreateTreeModel(GraphicsDevice graphicsDevice, GameState state)
         {
+            //===== BEGINNER'S GUIDE: GPU BUFFERS =====//
+            
             // Generate the tree geometry (vertices and indices)
             (CustomVertexPositionNormalTexture[] vertices, short[] indices) = GenerateTree();
             
@@ -26,23 +28,25 @@ namespace MGCustomDrawingPipeline.Rendering
             state.TotalTriangles = indices.Length / 3;
 
             // Create a vertex buffer to store our vertices on the GPU
-            // The GPU can access this data directly during rendering
+            // A vertex buffer is like a container that holds all the point data for our 3D model
+            // The GPU can access this data directly during rendering for better performance
             state.VertexBuffer = new VertexBuffer(
-                graphicsDevice,
-                CustomVertexPositionNormalTexture.VertexDeclaration,
-                state.TotalVertices,
-                BufferUsage.WriteOnly);
+                graphicsDevice,                               // The graphics device to create the buffer on
+                CustomVertexPositionNormalTexture.VertexDeclaration,  // The structure of each vertex
+                state.TotalVertices,                          // How many vertices to store
+                BufferUsage.WriteOnly);                       // How the buffer will be used (write once, read many times)
             
             // Upload the vertex data to the GPU
             state.VertexBuffer.SetData(vertices);
 
             // Create an index buffer to tell the GPU which vertices form triangles
+            // An index buffer contains references to vertices in the vertex buffer
             // This saves memory by reusing vertices in multiple triangles
             state.IndexBuffer = new IndexBuffer(
-                graphicsDevice,
-                IndexElementSize.SixteenBits, // 16-bit indices support up to 65,536 vertices
-                state.TotalIndices,
-                BufferUsage.WriteOnly);
+                graphicsDevice,                               // The graphics device to create the buffer on
+                IndexElementSize.SixteenBits,                 // 16-bit indices support up to 65,536 vertices
+                state.TotalIndices,                           // How many indices to store
+                BufferUsage.WriteOnly);                       // How the buffer will be used
             
             // Upload the index data to the GPU
             state.IndexBuffer.SetData(indices);
@@ -58,6 +62,8 @@ namespace MGCustomDrawingPipeline.Rendering
         /// <returns>Arrays of vertices and indices that define the tree geometry</returns>
         private static (CustomVertexPositionNormalTexture[] vertices, short[] indices) GenerateTree()
         {
+            //===== BEGINNER'S GUIDE: 3D GEOMETRY CREATION =====//
+            
             // Create lists to hold all vertices and indices
             // Lists are used because we'll be adding vertices/indices in sections
             var verticesList = new List<CustomVertexPositionNormalTexture>();
@@ -67,13 +73,11 @@ namespace MGCustomDrawingPipeline.Rendering
             // The color will be the same regardless of the UV coordinates
             Vector2 texCoord = new Vector2(0.5f, 0.5f);
             
-            //===== BEGINNER'S GUIDE: CREATING 3D GEOMETRY =====//
-            
             // 1. CREATE THE TREE TRUNK
             // We'll create a rectangular prism (box) for the trunk
-            Vector3 trunkBase = new Vector3(0, -0.5f, 0); // Bottom center of trunk
-            float trunkWidth = 0.1f;                      // Width/depth of trunk
-            float trunkHeight = 0.5f;                     // Height of trunk
+            Vector3 trunkBase = new Vector3(0, -0.5f, 0);  // Bottom center of trunk
+            float trunkWidth = 0.1f;                       // Width/depth of trunk
+            float trunkHeight = 0.5f;                      // Height of trunk
             
             // In 3D graphics, we build shapes out of triangles
             // For a box, we need 8 vertices (corners) and 12 triangles (2 per face)
@@ -137,6 +141,7 @@ namespace MGCustomDrawingPipeline.Rendering
                 float z = (float)System.Math.Cos(angle) * leafRadius;
                 
                 // Calculate normal for each vertex pointing outward and upward
+                // This affects how light interacts with the conical surface
                 Vector3 normal = Vector3.Normalize(new Vector3(x, 0.5f, z));
                 
                 verticesList.Add(new CustomVertexPositionNormalTexture(leafBase + new Vector3(x, 0, z), normal, texCoord));
@@ -149,6 +154,7 @@ namespace MGCustomDrawingPipeline.Rendering
                 int next = (i + 1) % leafSegments;
                 
                 // Calculate face normal for this triangle
+                // This helps with proper lighting of the foliage
                 Vector3 v0 = verticesList[baseVertex].Position;
                 Vector3 v1 = verticesList[baseVertex + 1 + i].Position;
                 Vector3 v2 = verticesList[baseVertex + 1 + next].Position;
@@ -161,23 +167,27 @@ namespace MGCustomDrawingPipeline.Rendering
                 Vector3 normal = Vector3.Normalize(Vector3.Cross(edge1, edge2));
                 
                 // Define indices for the triangle
+                // Indices tell the GPU which vertices to use for each triangle
                 int topIndex = baseVertex;
                 int index1 = baseVertex + 1 + i;
                 int index2 = baseVertex + 1 + next;
                 
                 // Add indices in counterclockwise order
+                // This defines the front face of the triangle (normal points out)
                 indicesList.Add((short)topIndex);
                 indicesList.Add((short)index1);
                 indicesList.Add((short)index2);
             }
             
             // Add the bottom face of the cone (optional, as it's not usually visible)
+            // This creates triangles to fill in the bottom circle of the cone
             for (int i = 1; i < leafSegments - 1; i++)
             {
                 // Calculate face normal (pointing down)
                 Vector3 normal = Vector3.Down;
                 
                 // Create triangles to fill the bottom circle
+                // Using a "triangle fan" approach
                 indicesList.Add((short)(baseVertex + 1));
                 indicesList.Add((short)(baseVertex + 1 + i + 1));
                 indicesList.Add((short)(baseVertex + 1 + i));
@@ -235,6 +245,9 @@ namespace MGCustomDrawingPipeline.Rendering
         
         /// <summary>
         /// Helper method to add indices for a quad (two triangles) with proper normals
+        /// 
+        /// A quad is a rectangle made of two triangles. This method creates vertices
+        /// with the proper normal vectors for correct lighting on each face of the model.
         /// </summary>
         /// <param name="vertices">The list of vertices to add to</param>
         /// <param name="indices">The list of indices to add to</param>
@@ -270,6 +283,7 @@ namespace MGCustomDrawingPipeline.Rendering
         
         /// <summary>
         /// Helper method to add indices for a quad (two triangles)
+        /// This simpler version doesn't create new vertices with adjusted normals
         /// </summary>
         /// <param name="indices">The list of indices to add to</param>
         /// <param name="a">Index of first vertex</param>

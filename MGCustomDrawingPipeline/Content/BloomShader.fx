@@ -7,6 +7,13 @@
 #endif
 
 //======================================================================
+// BLOOM SHADER - EDUCATIONAL RESOURCE
+//======================================================================
+// This shader implements a multi-pass bloom post-processing effect.
+// Bloom creates a glow around bright areas of the image, simulating how
+// very bright light sources appear in real cameras and to the human eye.
+
+//======================================================================
 // SHADER PARAMETERS
 //======================================================================
 // The texture that contains the scene to process
