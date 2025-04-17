@@ -3,6 +3,8 @@
 ## Overview
 MGCustomDrawingPipeline is an educational MonoGame project designed to help developers understand the fundamentals of custom drawing pipelines and shader programming. This project provides a clear, well-commented implementation of a basic 3D rendering system using MonoGame's low-level graphics APIs, leveraging the HiDef graphics profile for enhanced visual quality.
 
+> **Update:** This project has been upgraded to use MonoGame 3.8.3, providing improved performance, better compatibility with modern systems, and access to the latest framework features.
+
 ## Purpose
 This project was created to:
 - Demonstrate how to implement custom drawing code in MonoGame
@@ -37,7 +39,7 @@ This project was created to:
 ### Prerequisites
 - .NET 9 SDK
 - Visual Studio 2022 or other compatible IDE
-- MonoGame framework
+- MonoGame 3.8.3 framework
 - Graphics hardware supporting DirectX 11 or higher (for shader model 5.0)
 
 ### Running the Project
@@ -100,6 +102,15 @@ The project uses MonoGame's HiDef graphics profile which provides:
 - Support for more complex shader effects and larger textures
 - Better visual quality at the cost of requiring more capable hardware
 - Access to advanced DirectX 11 features like compute shaders and tessellation
+
+## MonoGame 3.8.3 Benefits
+The project now leverages MonoGame 3.8.3, which includes:
+- Improved content pipeline with better error reporting
+- Enhanced shader compilation and validation
+- Better performance through optimized rendering paths
+- More reliable cross-platform compatibility
+- Updated dependencies and tools
+- Improved support for modern development environments
 
 ## Further Learning
 To continue exploring graphics programming concepts:
