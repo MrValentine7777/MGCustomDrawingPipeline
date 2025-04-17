@@ -2,8 +2,8 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
-using MGCustomDrawingPipeline.VertexTypes;
 using MGCustomDrawingPipeline.Utilities;
+using MGCustomDrawingPipeline.TextureManagement;
 
 namespace MGCustomDrawingPipeline
 {
@@ -92,7 +92,7 @@ namespace MGCustomDrawingPipeline
             CreateRenderTargets();
             
             // Create the 1x1 pixel color textures
-            CreateColorTextures();
+            TextureManagement.ColorTextureCreator.CreateTreeColorTextures(GraphicsDevice, _state);
 
             // Generate tree vertices and indices 
             CreateTreeModel();
@@ -102,18 +102,6 @@ namespace MGCustomDrawingPipeline
             
             // Load the bloom post-processing shader
             _state.BloomEffect = Content.Load<Effect>("BloomShader");
-        }
-        
-        /// <summary>
-        /// Creates the 1x1 textures for the tree colors
-        /// </summary>
-        private void CreateColorTextures()
-        {
-            // Brown color for trunk
-            _state.TrunkTexture = TextureUtilities.Create1x1Texture(GraphicsDevice, new Color(139, 69, 19));
-            
-            // Green color for leaves
-            _state.LeafTexture = TextureUtilities.Create1x1Texture(GraphicsDevice, new Color(34, 139, 34));
         }
         
         /// <summary>
@@ -167,7 +155,7 @@ namespace MGCustomDrawingPipeline
         private void CreateTreeModel()
         {
             // Define the tree components
-            (MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture[] vertices, short[] indices) = GenerateTree();
+            (VertexTypes.VertexPositionTexture[] vertices, short[] indices) = GenerateTree();
             _state.TotalVertices = vertices.Length;
             _state.TotalIndices = indices.Length;
             _state.TotalTriangles = indices.Length / 3;
@@ -175,7 +163,7 @@ namespace MGCustomDrawingPipeline
             // Create vertex buffer
             _state.VertexBuffer = new VertexBuffer(
                 GraphicsDevice,
-                MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture.VertexDeclaration,
+                VertexTypes.VertexPositionTexture.VertexDeclaration,
                 _state.TotalVertices,
                 BufferUsage.WriteOnly);
             _state.VertexBuffer.SetData(vertices);
@@ -192,10 +180,10 @@ namespace MGCustomDrawingPipeline
         /// <summary>
         /// Generates vertices and indices for a simple tree
         /// </summary>
-        private (MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture[] vertices, short[] indices) GenerateTree()
+        private (VertexTypes.VertexPositionTexture[] vertices, short[] indices) GenerateTree()
         {
             // Create a list to hold all vertices and indices
-            var verticesList = new List<MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture>();
+            var verticesList = new List<VertexTypes.VertexPositionTexture>();
             var indicesList = new List<short>();
             
             // For 1x1 textures, we can use any texture coordinate
@@ -208,16 +196,16 @@ namespace MGCustomDrawingPipeline
             float trunkHeight = 0.5f;
             
             // Trunk vertices (bottom square)
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, -trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, -trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, trunkWidth), texCoord));
+            verticesList.Add(new VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, -trunkWidth), texCoord));
+            verticesList.Add(new VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, -trunkWidth), texCoord));
+            verticesList.Add(new VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, trunkWidth), texCoord));
+            verticesList.Add(new VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, trunkWidth), texCoord));
             
             // Trunk vertices (top square)
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, -trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, -trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, trunkWidth), texCoord));
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, trunkWidth), texCoord));
+            verticesList.Add(new VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, -trunkWidth), texCoord));
+            verticesList.Add(new VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, -trunkWidth), texCoord));
+            verticesList.Add(new VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, trunkWidth), texCoord));
+            verticesList.Add(new VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, trunkWidth), texCoord));
             
             // Trunk indices (6 faces, 2 triangles per face = 12 triangles)
             // Bottom face
@@ -240,7 +228,7 @@ namespace MGCustomDrawingPipeline
             Vector3 leafTop = leafBase + new Vector3(0, leafHeight, 0);
             
             // Add the top vertex of the cone
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafTop, texCoord));
+            verticesList.Add(new VertexTypes.VertexPositionTexture(leafTop, texCoord));
             
             // Add vertices in a circle for the base of the cone
             int leafSegments = 8;
@@ -250,7 +238,7 @@ namespace MGCustomDrawingPipeline
                 float x = (float)System.Math.Sin(angle) * leafRadius;
                 float z = (float)System.Math.Cos(angle) * leafRadius;
                 
-                verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
+                verticesList.Add(new VertexTypes.VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
             }
             
             // Add triangles connecting the top to each segment of the circle
@@ -277,7 +265,7 @@ namespace MGCustomDrawingPipeline
             leafRadius *= 0.7f;
             
             // Add the top vertex of the second cone
-            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafTop, texCoord));
+            verticesList.Add(new VertexTypes.VertexPositionTexture(leafTop, texCoord));
             
             // Add vertices in a circle for the base of the second cone
             for (int i = 0; i < leafSegments; i++)
@@ -286,7 +274,7 @@ namespace MGCustomDrawingPipeline
                 float x = (float)System.Math.Sin(angle) * leafRadius;
                 float z = (float)System.Math.Cos(angle) * leafRadius;
                 
-                verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
+                verticesList.Add(new VertexTypes.VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
             }
             
             // Add triangles connecting the top to each segment of the circle
