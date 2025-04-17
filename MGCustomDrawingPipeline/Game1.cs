@@ -70,7 +70,7 @@ namespace MGCustomDrawingPipeline
         /// Bloom threshold parameter
         /// Determines the minimum brightness level that will produce bloom
         /// </summary>
-        private float _bloomThreshold = 0.3f;
+        private float _bloomThreshold = 0.2f;
         
         /// <summary>
         /// Bloom blur amount parameter
@@ -100,13 +100,13 @@ namespace MGCustomDrawingPipeline
         /// Sensitivity for green color bloom extraction
         /// Higher values make more shades of green produce bloom
         /// </summary>
-        private float _colorSensitivity = 0.25f;
+        private float _colorSensitivity = 0.35f;
         
         /// <summary>
         /// Target green color for bloom extraction
-        /// This forest green color specifically targets the tree's foliage
+        /// This color specifically targets the tree's foliage
         /// </summary>
-        private Vector3 _targetGreenColor = new Vector3(34.0f / 255.0f, 139.0f / 255.0f, 34.0f / 255.0f); // Forest green
+        private Vector3 _targetGreenColor = new Vector3(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f); // CornflowerBlue
         
         //===== Animation Properties =====//
         
@@ -523,9 +523,9 @@ namespace MGCustomDrawingPipeline
                 GraphicsDevice.Viewport.Width, 
                 GraphicsDevice.Viewport.Height));
             
-            // Apply the green bloom extraction shader technique
+            // Apply the blue bloom extraction shader technique
             _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
-            _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["GreenBloomExtract"];
+            _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["BlueBloomExtract"];
             _bloomEffect.CurrentTechnique.Passes[0].Apply();
             _spriteBatch.Draw(_sceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
             _spriteBatch.End();

@@ -67,7 +67,7 @@ float2 BlurDirection;
 float2 ScreenSize;
 
 // Target color to bloom (for color-specific bloom)
-float3 TargetColor = float3(34.0f/255.0f, 139.0f/255.0f, 34.0f/255.0f); // Forest green
+float3 TargetColor = float3(100.0f/255.0f, 149.0f/255.0f, 237.0f/255.0f); // CornflowerBlue
 
 // Color sensitivity (how close to the target color a pixel needs to be to bloom)
 float ColorSensitivity = 0.25f;
@@ -146,6 +146,29 @@ float4 GreenBloomExtractPS(float2 texCoord : TEXCOORD0) : COLOR0
     brightness = max(0, brightness - BloomThreshold);
     
     // Apply stronger bloom to colors that are closer to our target green
+    float bloomFactor = brightness * similarity;
+    
+    // Return the color with the bloom factor applied
+    return color * bloomFactor;
+}
+
+//======================================================================
+// BLUE COLOR BLOOM EXTRACT PIXEL SHADER
+//======================================================================
+// This shader extracts specifically blue colors for bloom
+float4 BlueBloomExtractPS(float2 texCoord : TEXCOORD0) : COLOR0
+{
+    // Sample the original scene texture
+    float4 color = tex2D(InputSampler, texCoord);
+    
+    // Calculate how similar this pixel is to our target blue color
+    float similarity = ColorSimilarity(color.rgb, TargetColor);
+    
+    // Calculate brightness, factoring in the color similarity
+    float brightness = dot(color.rgb, float3(0.299f, 0.587f, 0.114f));
+    brightness = max(0, brightness - BloomThreshold);
+    
+    // Apply stronger bloom to colors that are closer to our target blue
     float bloomFactor = brightness * similarity;
     
     // Return the color with the bloom factor applied
@@ -233,6 +256,15 @@ technique GreenBloomExtract
     {
         VertexShader = compile VS_SHADERMODEL VertexShaderFunction();
         PixelShader = compile PS_SHADERMODEL GreenBloomExtractPS();
+    }
+}
+
+technique BlueBloomExtract
+{
+    pass Pass1
+    {
+        VertexShader = compile VS_SHADERMODEL VertexShaderFunction();
+        PixelShader = compile PS_SHADERMODEL BlueBloomExtractPS();
     }
 }
 

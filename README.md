@@ -46,6 +46,14 @@ This project was created to:
 3. Build and run the project (F5)
 4. Press 'P' key to toggle the bloom post-processing effect
 
+### Troubleshooting
+If you see a black screen after pressing 'P' to enable post-processing:
+- Ensure all content (shader files) has been properly built and is included in the output directory
+- Check that your graphics card supports the shader features being used
+- Try increasing `_bloomIntensity` in Game1.cs if the effect is too subtle to see
+- Some systems may require a restart of the application after the first attempt at using post-processing
+- If you modified the shader code, ensure all required parameters are properly set in DrawSceneToRenderTarget()
+
 ## Project Structure
 
 ### Key Components
@@ -72,6 +80,13 @@ The project implements a multi-stage bloom effect specifically targeting the gre
 4. **Combination**: The bloom effect is combined with the original image to create the final glowing effect
 
 Each stage uses dedicated render targets to store intermediate results before final composition.
+
+### Post-Processing Parameters
+You can adjust the bloom effect by modifying these parameters in Game1.cs:
+- **_bloomIntensity**: Controls the brightness of the bloom effect (default: 1.5f)
+- **_bloomThreshold**: Determines minimum brightness for bloom to occur (default: 0.3f)
+- **_bloomBlurAmount**: Controls the spread of the blur effect (default: 4.0f)
+- **_colorSensitivity**: Adjusts how selective the green color targeting is (default: 0.25f)
 
 ## Graphics Profile Details
 The project uses MonoGame's HiDef graphics profile which provides:
