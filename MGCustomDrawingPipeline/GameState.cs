@@ -18,7 +18,7 @@ namespace MGCustomDrawingPipeline
         /// <summary>
         /// Helper for drawing sprites (not used in this demo, but commonly included)
         /// </summary>
-        public SpriteBatch SpriteBatch { get; set; }
+        public SpriteBatch SpriteBatch { get; set; }    
         
         //===== 3D Rendering Components =====//
         

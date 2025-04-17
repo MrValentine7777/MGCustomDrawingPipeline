@@ -107,7 +107,7 @@ You can adjust the bloom effect by modifying these parameters in GameState.cs:
 - **BloomThreshold**: Determines minimum brightness for bloom to occur (default: 0.1f)
 - **BloomBlurAmount**: Controls the spread of the blur effect (default: 6.0f)
 - **ColorSensitivity**: Adjusts how selective the color targeting is (default: 0.5f)
-- **SunlightColor**: The specific sunlight color (default: more saturated warm yellow/orange)
+- **SunlightColor**: The specific sunlight color (default: warm yellow/orange)
 - **SunlightIntensity**: Controls the brightness of sunlight illumination (default: 1.2f)
 
 ## Lighting System
@@ -123,8 +123,8 @@ Adjust the lighting by modifying these parameters in GameState.cs:
 - **SunlightDirection**: Direction of the sunlight
 - **AmbientLight**: Base level illumination color and intensity
 - **DiffuseLight**: Directional light color and intensity
-- **SunlightColor**: Color of the sunlight (currently using more saturated values: 1.0f, 0.9f, 0.5f)
-- **SunlightIntensity**: Brightness of the sunlight (increased to 1.2f for more dramatic effects)
+- **SunlightColor**: Color of the sunlight (currently using values: 1.0f, 0.9f, 0.5f)
+- **SunlightIntensity**: Brightness of the sunlight (1.2f for dramatic effects)
 - **SpecularLight**: Color and intensity of specular highlights
 - **SpecularPower**: Sharpness of specular highlights
 
