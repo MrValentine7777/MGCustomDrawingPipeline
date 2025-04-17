@@ -3,7 +3,7 @@
 ## Overview
 MGCustomDrawingPipeline is an educational MonoGame project designed to help developers understand the fundamentals of custom drawing pipelines and shader programming. This project provides a clear, well-commented implementation of a basic 3D rendering system using MonoGame's low-level graphics APIs, leveraging the HiDef graphics profile for enhanced visual quality.
 
-> **Update:** This project has been upgraded to use MonoGame 3.8.3 with .NET 9, providing improved performance, better compatibility with modern systems, and access to the latest framework features.
+> **Update:** This project has been upgraded to use MonoGame 3.8.3 with .NET 9, providing improved performance, better compatibility with modern systems, and access to the latest framework features. Additionally, a dynamic sunlight system has been added with specialized lighting and bloom effects.
 
 ## Purpose
 This project was created to:
@@ -13,6 +13,7 @@ This project was created to:
 - Serve as a learning resource for graphics programming beginners
 - Illustrate the benefits of using HiDef graphics profile over Reach
 - Showcase an organized, component-based architecture for rendering pipelines
+- Demonstrate realistic lighting with multiple light sources and effects
 
 ## What You'll Learn
 - Creating and managing vertex and index buffers
@@ -24,6 +25,8 @@ This project was created to:
 - Implementing advanced post-processing techniques like bloom effects
 - Creating color-specific visual effects using shader technology
 - Structuring rendering code using dedicated component classes
+- Implementing multiple light sources (main directional light and sunlight)
+- Compositing diffuse and specular lighting with ambient illumination
 
 ## Project Features
 - A rotating 3D tree model with texture-based coloring (trunk and foliage)
@@ -34,8 +37,10 @@ This project was created to:
 - High-precision 24-bit depth buffer with 8-bit stencil
 - DirectX 11 shader model 5.0 for maximum graphical fidelity
 - Color-targeted bloom post-processing effect that makes the blue background glow
+- Sunlight source with specialized warm-toned bloom effects
 - Multi-pass rendering pipeline utilizing render targets
 - Component-based architecture with dedicated rendering classes
+- Dynamic lighting with diffuse and specular reflections
 
 ## Getting Started
 
@@ -77,16 +82,17 @@ If you see a black screen after pressing 'P' to enable post-processing:
 
 ### How It Works
 The application demonstrates a complete rendering pipeline:
-1. **Scene Rendering**: The 3D tree model is rendered using vertex and index buffers with 1x1 color textures
-2. **Post-Processing Extraction**: The blue color from the background is extracted using a color-targeted bloom shader
-3. **Gaussian Blur**: A two-pass (horizontal and vertical) Gaussian blur is applied to the extracted colors
-4. **Final Composition**: The original scene and the blurred glow effect are combined for the final image
+1. **Scene Rendering**: The 3D tree model is rendered using vertex and index buffers with 1x1 color textures and dynamic lighting
+2. **Lighting Calculation**: The model is illuminated using multiple light sources (main directional light and sunlight)
+3. **Post-Processing Extraction**: The sunlight-affected areas are extracted using a color-targeted bloom shader
+4. **Gaussian Blur**: A two-pass (horizontal and vertical) Gaussian blur is applied to the extracted colors
+5. **Final Composition**: The original scene and the blurred glow effect are combined for the final image
 
 ## Understanding the Post-Processing Pipeline
 
-The project implements a multi-stage bloom effect specifically targeting the cornflower blue color of the background:
+The project implements a multi-stage bloom effect targeting sunlight-affected areas:
 
-1. **Color Extraction**: The BlueBloomExtract shader pass extracts pixels similar to the cornflower blue color
+1. **Sunlight Extraction**: The SunlightBloomExtract shader pass extracts pixels similar to the warm sunlight color
 2. **Horizontal Blur**: The first blur pass applies a Gaussian blur in the horizontal direction
 3. **Vertical Blur**: The second blur pass applies a Gaussian blur in the vertical direction
 4. **Combination**: The bloom effect is combined with the original image to create the final glowing effect
@@ -98,8 +104,27 @@ You can adjust the bloom effect by modifying these parameters in GameState.cs:
 - **BloomIntensity**: Controls the brightness of the bloom effect (default: 1.5f)
 - **BloomThreshold**: Determines minimum brightness for bloom to occur (default: 0.2f)
 - **BloomBlurAmount**: Controls the spread of the blur effect (default: 4.0f)
-- **ColorSensitivity**: Adjusts how selective the blue color targeting is (default: 0.35f)
-- **TargetBlueColor**: The specific color to be targeted by the bloom effect (default: CornflowerBlue)
+- **ColorSensitivity**: Adjusts how selective the color targeting is (default: 0.35f)
+- **SunlightColor**: The specific sunlight color (default: warm yellow/orange)
+- **SunlightIntensity**: Controls the brightness of sunlight illumination (default: 0.8f)
+
+## Lighting System
+The project demonstrates a dual light source system:
+- **Main Directional Light**: General scene illumination
+- **Sunlight Source**: Warm-toned directional light with specialized bloom effects
+- **Ambient Light**: Base level illumination present throughout the scene
+- **Specular Highlights**: Surface reflections calculated per light source
+
+### Lighting Parameters
+Adjust the lighting by modifying these parameters in GameState.cs:
+- **LightDirection**: Direction of the main light source
+- **SunlightDirection**: Direction of the sunlight
+- **AmbientLight**: Base level illumination color and intensity
+- **DiffuseLight**: Directional light color and intensity
+- **SunlightColor**: Color of the sunlight
+- **SunlightIntensity**: Brightness of the sunlight
+- **SpecularLight**: Color and intensity of specular highlights
+- **SpecularPower**: Sharpness of specular highlights
 
 ## Graphics Profile Details
 The project uses MonoGame's HiDef graphics profile which provides:
@@ -120,8 +145,8 @@ The project demonstrates a well-structured approach to game development:
 
 ## Further Learning
 To continue exploring graphics programming concepts:
-- Experiment with modifying the bloom parameters for different effects
-- Try targeting different colors for the bloom effect (the shader includes options for both blue and green targeting)
+- Experiment with modifying the sunlight parameters for different times of day
+- Try implementing additional light sources like point lights or spotlights
 - Modify the tree model to add more complexity or detail
 - Implement additional post-processing effects (HDR, tone mapping, etc.)
 - Explore different blur algorithms beyond Gaussian blur

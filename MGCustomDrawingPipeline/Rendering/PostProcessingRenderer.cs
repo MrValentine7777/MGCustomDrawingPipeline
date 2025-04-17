@@ -27,9 +27,9 @@ namespace MGCustomDrawingPipeline.Rendering
             
             // Configure the shader parameters for sunlight extraction
             state.BloomEffect.Parameters["InputTexture"].SetValue(state.SceneRenderTarget);
-            state.BloomEffect.Parameters["BloomThreshold"].SetValue(state.BloomThreshold);
-            state.BloomEffect.Parameters["TargetColor"].SetValue(state.SunlightColor);
-            state.BloomEffect.Parameters["ColorSensitivity"].SetValue(state.ColorSensitivity);
+            state.BloomEffect.Parameters["BloomThreshold"].SetValue(state.BloomThreshold * 0.5f); // Lower threshold for sunlight bloom
+            state.BloomEffect.Parameters["TargetColor"].SetValue(state.SunlightColor); // Use the sunlight color for extraction
+            state.BloomEffect.Parameters["ColorSensitivity"].SetValue(state.ColorSensitivity * 1.2f); // Increase sensitivity for sunlight
             state.BloomEffect.Parameters["ScreenSize"].SetValue(new Vector2(
                 graphicsDevice.Viewport.Width, 
                 graphicsDevice.Viewport.Height));
@@ -41,13 +41,13 @@ namespace MGCustomDrawingPipeline.Rendering
             state.SpriteBatch.Draw(state.SceneRenderTarget, graphicsDevice.Viewport.Bounds, Color.White);
             state.SpriteBatch.End();
             
-            // STEP 3: Apply horizontal Gaussian blur to the extracted blue colors
+            // STEP 3: Apply horizontal Gaussian blur to the extracted sunlight colors
             graphicsDevice.SetRenderTarget(state.BloomHorizontalBlurTarget);
             graphicsDevice.Clear(Color.Black);
             
             // Configure shader parameters for horizontal blur pass
             state.BloomEffect.Parameters["InputTexture"].SetValue(state.BloomExtractTarget);
-            state.BloomEffect.Parameters["BlurAmount"].SetValue(state.BloomBlurAmount);
+            state.BloomEffect.Parameters["BlurAmount"].SetValue(state.BloomBlurAmount * 1.2f); // Slightly stronger blur for sunlight glow
             state.BloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(1, 0)); // Horizontal direction
             
             // Apply the horizontal Gaussian blur
@@ -78,7 +78,7 @@ namespace MGCustomDrawingPipeline.Rendering
             // Configure shader parameters for the final composition
             state.BloomEffect.Parameters["BaseTexture"].SetValue(state.SceneRenderTarget);
             state.BloomEffect.Parameters["BloomTexture"].SetValue(state.BloomVerticalBlurTarget);
-            state.BloomEffect.Parameters["BloomIntensity"].SetValue(state.BloomIntensity);
+            state.BloomEffect.Parameters["BloomIntensity"].SetValue(state.BloomIntensity * 1.3f); // Enhance sunlight bloom intensity
             
             // Apply the bloom combine technique to produce the final image
             state.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
