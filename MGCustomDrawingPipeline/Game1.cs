@@ -77,6 +77,9 @@ namespace MGCustomDrawingPipeline
             // Create the graphics manager - this is required for any MonoGame project
             _graphics = new GraphicsDeviceManager(this);
             
+            // Set the graphics profile to HiDef for higher quality rendering and more advanced shader support
+            _graphics.GraphicsProfile = GraphicsProfile.HiDef;
+            
             // Set the folder where game content (like shaders) will be loaded from
             Content.RootDirectory = "Content";
             
@@ -95,6 +98,13 @@ namespace MGCustomDrawingPipeline
             // but may reduce performance on lower-end machines.
             _graphics.PreferredBackBufferWidth = 800;  // Width in pixels
             _graphics.PreferredBackBufferHeight = 600; // Height in pixels
+            
+            // Enable anti-aliasing for smoother edges (HiDef profile supports this)
+            _graphics.PreferMultiSampling = true;
+            
+            // Use 24-bit depth buffer with 8-bit stencil for better precision in 3D rendering
+            _graphics.PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8;
+            
             _graphics.ApplyChanges();                  // Apply the new settings
             
             //===== BEGINNER NOTE: Rasterizer State =====//

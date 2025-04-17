@@ -2,8 +2,10 @@
 #define VS_SHADERMODEL vs_3_0
 #define PS_SHADERMODEL ps_3_0
 #else
-#define VS_SHADERMODEL vs_4_0_level_9_1
-#define PS_SHADERMODEL ps_4_0_level_9_1
+// Using shader model 5.0 for desktop DirectX
+// This enables advanced shader features available in DirectX 11
+#define VS_SHADERMODEL vs_5_0
+#define PS_SHADERMODEL ps_5_0
 #endif
 
 //========================================================================
@@ -11,6 +13,13 @@
 //========================================================================
 // Shaders are small programs that run directly on the graphics card (GPU).
 // They control how 3D objects are rendered to the screen.
+//
+// This shader file uses DirectX shader model 5.0 (high-definition profile)
+// which provides the most advanced shader capabilities available in DirectX 11:
+// - Improved performance on modern hardware
+// - Support for compute shaders and tessellation
+// - More texture slots and larger shader programs
+// - Better precision and more shader instructions
 //
 // This shader file contains two main programs:
 // 1. A vertex shader (MainVS) - Transforms vertex positions and prepares data
