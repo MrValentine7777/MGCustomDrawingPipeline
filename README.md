@@ -18,15 +18,19 @@ This project was created to:
 - Building a custom rendering pipeline from scratch
 - How vertex and pixel shaders work together in real-time graphics
 - Configuring HiDef graphics settings for improved visual quality
+- Implementing advanced post-processing techniques like bloom effects
+- Creating color-specific visual effects using shader technology
 
 ## Project Features
-- A rotating triangle with vertex coloring and smooth gradient interpolation
+- A rotating 3D tree model with vertex coloring
 - Custom HLSL shader with detailed comments explaining each section
 - Transformation matrices for proper 3D positioning and animation
 - Comprehensive code comments designed for educational purposes
 - HiDef graphics profile with multi-sampling for anti-aliasing
 - High-precision 24-bit depth buffer with 8-bit stencil
 - DirectX 11 shader model 5.0 for maximum graphical fidelity
+- Color-targeted bloom post-processing effect that makes green foliage glow
+- Multi-pass rendering pipeline utilizing render targets
 
 ## Getting Started
 
@@ -40,30 +44,34 @@ This project was created to:
 1. Clone the repository
 2. Open the solution file in Visual Studio
 3. Build and run the project (F5)
+4. Press 'P' key to toggle the bloom post-processing effect
 
 ## Project Structure
 
 ### Key Components
 - **Game1.cs**: Main game class that implements the custom drawing pipeline with HiDef settings
 - **TriangleShader.fx**: HLSL shader file that defines vertex and pixel shaders using shader model 5.0
+- **BloomShader.fx**: HLSL shader file that implements the multi-pass bloom post-processing effect
 - **Program.cs**: Application entry point
 - **Content.mgcb**: Content pipeline configuration with HiDef profile settings
 
 ### How It Works
 The application demonstrates a complete rendering pipeline:
-1. Vertex data (positions and colors) is defined in C#
-2. This data is transferred to the GPU using vertex and index buffers
-3. The shader transforms the vertices based on rotation matrices
-4. The shader interpolates colors across the triangle surface
-5. The resulting colored triangle is rendered to the screen with anti-aliasing
+1. **Scene Rendering**: The 3D tree model is rendered using vertex and index buffers
+2. **Post-Processing Extraction**: The green color from the tree's foliage is extracted using a color-targeted bloom shader
+3. **Gaussian Blur**: A two-pass (horizontal and vertical) Gaussian blur is applied to the extracted colors
+4. **Final Composition**: The original scene and the blurred glow effect are combined for the final image
 
-## Understanding the Shader
-The `TriangleShader.fx` file contains a shader implementation with:
-- Vertex shader for transforming 3D positions to screen coordinates
-- Pixel shader for determining the final color of each pixel
-- Data structures for passing information between shader stages
-- Techniques and passes that define the rendering process
-- DirectX shader model 5.0 compilation targets for maximum quality and performance
+## Understanding the Post-Processing Pipeline
+
+The project implements a multi-stage bloom effect specifically targeting the green colors of the tree:
+
+1. **Color Extraction**: The GreenBloomExtract shader pass extracts pixels similar to the forest green color
+2. **Horizontal Blur**: The first blur pass applies a Gaussian blur in the horizontal direction
+3. **Vertical Blur**: The second blur pass applies a Gaussian blur in the vertical direction
+4. **Combination**: The bloom effect is combined with the original image to create the final glowing effect
+
+Each stage uses dedicated render targets to store intermediate results before final composition.
 
 ## Graphics Profile Details
 The project uses MonoGame's HiDef graphics profile which provides:
@@ -76,15 +84,12 @@ The project uses MonoGame's HiDef graphics profile which provides:
 
 ## Further Learning
 To continue exploring graphics programming concepts:
-- Experiment with modifying the vertex positions and colors
-- Try adding more geometric primitives
-- Implement additional shader effects (lighting, texturing, etc.)
-- Explore different transformation techniques
-- Test advanced shader features available in shader model 5.0:
-  - Compute shaders for non-graphical calculations
-  - Geometry shaders for procedural geometry
-  - Tessellation for dynamic level-of-detail
-- Implement post-processing effects using render targets
+- Experiment with modifying the bloom parameters for different effects
+- Try targeting different colors for the bloom effect
+- Implement additional post-processing effects (HDR, tone mapping, etc.)
+- Explore different blur algorithms beyond Gaussian blur
+- Experiment with more complex 3D models and scenes
+- Implement advanced shader techniques like normal mapping or shadow mapping
 
 ## Contributing
 Contributions are welcome! If you have ideas for improving this educational resource or want to add more examples, please feel free to submit a pull request.

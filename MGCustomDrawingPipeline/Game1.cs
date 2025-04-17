@@ -9,7 +9,8 @@ namespace MGCustomDrawingPipeline
     /// 
     /// This application demonstrates how to create a basic 3D rendering pipeline in MonoGame
     /// by drawing a rotating tree model using custom vertex and index buffers along
-    /// with a custom shader effect.
+    /// with a custom shader effect. It also implements a color-targeted bloom post-processing
+    /// effect that makes the green foliage of the tree glow.
     /// </summary>
     public class Game1 : Game
     {
@@ -55,46 +56,55 @@ namespace MGCustomDrawingPipeline
         
         /// <summary>
         /// Shader effect for the bloom post-processing
+        /// This shader implements a multi-pass bloom effect targeting specific colors
         /// </summary>
         private Effect _bloomEffect;
         
         /// <summary>
         /// Bloom intensity parameter
+        /// Controls how bright the bloom effect appears in the final image
         /// </summary>
         private float _bloomIntensity = 1.5f;
         
         /// <summary>
         /// Bloom threshold parameter
+        /// Determines the minimum brightness level that will produce bloom
         /// </summary>
         private float _bloomThreshold = 0.3f;
         
         /// <summary>
         /// Bloom blur amount parameter
+        /// Controls the spread of the bloom effect
         /// </summary>
         private float _bloomBlurAmount = 4.0f;
         
         /// <summary>
         /// Render target for bloom extraction
+        /// Stores the extracted green colors from the scene
         /// </summary>
         private RenderTarget2D _bloomExtractTarget;
         
         /// <summary>
         /// Render target for horizontal blur
+        /// Stores the intermediate result of applying horizontal Gaussian blur
         /// </summary>
         private RenderTarget2D _bloomHorizontalBlurTarget;
         
         /// <summary>
         /// Render target for vertical blur
+        /// Stores the result of applying vertical Gaussian blur to the horizontal blur result
         /// </summary>
         private RenderTarget2D _bloomVerticalBlurTarget;
         
         /// <summary>
         /// Sensitivity for green color bloom extraction
+        /// Higher values make more shades of green produce bloom
         /// </summary>
         private float _colorSensitivity = 0.25f;
         
         /// <summary>
         /// Target green color for bloom extraction
+        /// This forest green color specifically targets the tree's foliage
         /// </summary>
         private Vector3 _targetGreenColor = new Vector3(34.0f / 255.0f, 139.0f / 255.0f, 34.0f / 255.0f); // Forest green
         
@@ -226,16 +236,17 @@ namespace MGCustomDrawingPipeline
             int width = GraphicsDevice.PresentationParameters.BackBufferWidth;
             int height = GraphicsDevice.PresentationParameters.BackBufferHeight;
             
-            // Create the main scene render target - using Color format for now
+            // Create the main scene render target with depth buffer for 3D rendering
             _sceneRenderTarget = new RenderTarget2D(
                 GraphicsDevice,
                 width,
                 height,
                 false,
-                SurfaceFormat.Color, // Use standard color format
-                DepthFormat.Depth24Stencil8);
+                SurfaceFormat.Color, // Standard color format for the main scene
+                DepthFormat.Depth24Stencil8); // Need depth for 3D rendering
                 
-            // Create additional render targets for the bloom effect
+            // Create render targets for the multi-pass bloom effect pipeline
+            // These don't need depth buffers since they're used for 2D post-processing
             _bloomExtractTarget = new RenderTarget2D(
                 GraphicsDevice,
                 width,
@@ -467,10 +478,10 @@ namespace MGCustomDrawingPipeline
         {
             if (_usePostProcessing)
             {
-                // Draw scene with bloom effect
+                // Apply the multi-pass bloom post-processing to the scene
                 DrawSceneToRenderTarget();
                 
-                // Draw the final result to the screen
+                // Present the final post-processed scene to the screen
                 GraphicsDevice.SetRenderTarget(null);
                 GraphicsDevice.Clear(Color.Black);
                 
@@ -480,7 +491,7 @@ namespace MGCustomDrawingPipeline
             }
             else
             {
-                // Draw directly to the screen without post-processing
+                // Draw directly to the screen without post-processing for comparison
                 GraphicsDevice.SetRenderTarget(null);
                 GraphicsDevice.Clear(Color.CornflowerBlue);
                 DrawTree();
@@ -490,20 +501,20 @@ namespace MGCustomDrawingPipeline
         }
         
         /// <summary>
-        /// Draws the tree scene to the scene render target
+        /// Draws the tree scene with bloom post-processing using a multi-pass approach
         /// </summary>
         private void DrawSceneToRenderTarget()
         {
-            // STEP 1: Render the scene to the main render target
+            // STEP 1: Render the tree scene to the main render target
             GraphicsDevice.SetRenderTarget(_sceneRenderTarget);
             GraphicsDevice.Clear(Color.CornflowerBlue);
             DrawTree();
             
-            // STEP 2: Extract the bright green pixels
+            // STEP 2: Extract the green colors from the scene into a separate render target
             GraphicsDevice.SetRenderTarget(_bloomExtractTarget);
             GraphicsDevice.Clear(Color.Black);
             
-            // Set bloom shader parameters
+            // Configure the shader parameters for green color extraction
             _bloomEffect.Parameters["InputTexture"].SetValue(_sceneRenderTarget);
             _bloomEffect.Parameters["BloomThreshold"].SetValue(_bloomThreshold);
             _bloomEffect.Parameters["TargetColor"].SetValue(_targetGreenColor);
@@ -512,53 +523,53 @@ namespace MGCustomDrawingPipeline
                 GraphicsDevice.Viewport.Width, 
                 GraphicsDevice.Viewport.Height));
             
-            // Apply the green bloom extraction technique
+            // Apply the green bloom extraction shader technique
             _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
             _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["GreenBloomExtract"];
             _bloomEffect.CurrentTechnique.Passes[0].Apply();
             _spriteBatch.Draw(_sceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
             _spriteBatch.End();
             
-            // STEP 3: Apply horizontal blur to the extracted brightness
+            // STEP 3: Apply horizontal Gaussian blur to the extracted green colors
             GraphicsDevice.SetRenderTarget(_bloomHorizontalBlurTarget);
             GraphicsDevice.Clear(Color.Black);
             
-            // Set blur parameters for horizontal pass
+            // Configure shader parameters for horizontal blur pass
             _bloomEffect.Parameters["InputTexture"].SetValue(_bloomExtractTarget);
             _bloomEffect.Parameters["BlurAmount"].SetValue(_bloomBlurAmount);
-            _bloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(1, 0));
+            _bloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(1, 0)); // Horizontal direction
             
-            // Apply the gaussian blur technique
+            // Apply the horizontal Gaussian blur
             _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
             _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["GaussianBlur"];
             _bloomEffect.CurrentTechnique.Passes[0].Apply();
             _spriteBatch.Draw(_bloomExtractTarget, GraphicsDevice.Viewport.Bounds, Color.White);
             _spriteBatch.End();
             
-            // STEP 4: Apply vertical blur to the horizontal blur result
+            // STEP 4: Apply vertical Gaussian blur to complete the bloom blur effect
             GraphicsDevice.SetRenderTarget(_bloomVerticalBlurTarget);
             GraphicsDevice.Clear(Color.Black);
             
-            // Set blur parameters for vertical pass
+            // Configure shader parameters for vertical blur pass
             _bloomEffect.Parameters["InputTexture"].SetValue(_bloomHorizontalBlurTarget);
-            _bloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(0, 1));
+            _bloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(0, 1)); // Vertical direction
             
-            // Apply the gaussian blur technique again
+            // Apply the vertical Gaussian blur
             _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
             _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["GaussianBlur"];
             _bloomEffect.CurrentTechnique.Passes[0].Apply();
             _spriteBatch.Draw(_bloomHorizontalBlurTarget, GraphicsDevice.Viewport.Bounds, Color.White);
             _spriteBatch.End();
             
-            // STEP 5: Combine the original scene with the bloom effect
+            // STEP 5: Combine the original scene with the blurred bloom effect
             GraphicsDevice.SetRenderTarget(_sceneRenderTarget);
             
-            // Set combine parameters
+            // Configure shader parameters for the final composition
             _bloomEffect.Parameters["BaseTexture"].SetValue(_sceneRenderTarget);
             _bloomEffect.Parameters["BloomTexture"].SetValue(_bloomVerticalBlurTarget);
             _bloomEffect.Parameters["BloomIntensity"].SetValue(_bloomIntensity);
             
-            // Apply the bloom combine technique
+            // Apply the bloom combine technique to produce the final image
             _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
             _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["BloomCombine"];
             _bloomEffect.CurrentTechnique.Passes[0].Apply();
@@ -618,21 +629,17 @@ namespace MGCustomDrawingPipeline
         /// </summary>
         protected override void UnloadContent()
         {
-            //===== BEGINNER NOTE: Resource Management =====//
-            // Properly disposing resources prevents memory leaks
-            // The ?. operator is the null conditional operator - it only calls
-            // Dispose() if the object is not null
+            // Dispose GPU resources to prevent memory leaks
             _vertexBuffer?.Dispose();
             _indexBuffer?.Dispose();
             _doubleSidedRasterizerState?.Dispose();
             
-            // Dispose the render targets
+            // Dispose all render targets used in the post-processing pipeline
             _sceneRenderTarget?.Dispose();
             _bloomExtractTarget?.Dispose();
             _bloomHorizontalBlurTarget?.Dispose();
             _bloomVerticalBlurTarget?.Dispose();
             
-            // Always call the base class UnloadContent method
             base.UnloadContent();
         }
     }
