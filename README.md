@@ -37,10 +37,12 @@ This project was created to:
 - High-precision 24-bit depth buffer with 8-bit stencil
 - DirectX 11 shader model 5.0 for maximum graphical fidelity
 - Color-targeted bloom post-processing effect that makes the blue background glow
-- Sunlight source with specialized warm-toned bloom effects
+- Enhanced sunlight source with intensified warm-toned bloom effects
 - Multi-pass rendering pipeline utilizing render targets
 - Component-based architecture with dedicated rendering classes
 - Dynamic lighting with diffuse and specular reflections
+
+- Bloom shading still needs a fix.
 
 ## Getting Started
 
@@ -101,12 +103,12 @@ Each stage uses dedicated render targets to store intermediate results before fi
 
 ### Post-Processing Parameters
 You can adjust the bloom effect by modifying these parameters in GameState.cs:
-- **BloomIntensity**: Controls the brightness of the bloom effect (default: 1.5f)
-- **BloomThreshold**: Determines minimum brightness for bloom to occur (default: 0.2f)
-- **BloomBlurAmount**: Controls the spread of the blur effect (default: 4.0f)
-- **ColorSensitivity**: Adjusts how selective the color targeting is (default: 0.35f)
-- **SunlightColor**: The specific sunlight color (default: warm yellow/orange)
-- **SunlightIntensity**: Controls the brightness of sunlight illumination (default: 0.8f)
+- **BloomIntensity**: Controls the brightness of the bloom effect (default: 2.5f)
+- **BloomThreshold**: Determines minimum brightness for bloom to occur (default: 0.1f)
+- **BloomBlurAmount**: Controls the spread of the blur effect (default: 6.0f)
+- **ColorSensitivity**: Adjusts how selective the color targeting is (default: 0.5f)
+- **SunlightColor**: The specific sunlight color (default: more saturated warm yellow/orange)
+- **SunlightIntensity**: Controls the brightness of sunlight illumination (default: 1.2f)
 
 ## Lighting System
 The project demonstrates a dual light source system:
@@ -121,8 +123,8 @@ Adjust the lighting by modifying these parameters in GameState.cs:
 - **SunlightDirection**: Direction of the sunlight
 - **AmbientLight**: Base level illumination color and intensity
 - **DiffuseLight**: Directional light color and intensity
-- **SunlightColor**: Color of the sunlight
-- **SunlightIntensity**: Brightness of the sunlight
+- **SunlightColor**: Color of the sunlight (currently using more saturated values: 1.0f, 0.9f, 0.5f)
+- **SunlightIntensity**: Brightness of the sunlight (increased to 1.2f for more dramatic effects)
 - **SpecularLight**: Color and intensity of specular highlights
 - **SpecularPower**: Sharpness of specular highlights
 
