@@ -8,7 +8,7 @@ namespace MGCustomDrawingPipeline
     /// Custom Drawing Pipeline Demo - MonoGame Tutorial Application
     /// 
     /// This application demonstrates how to create a basic 3D rendering pipeline in MonoGame
-    /// by drawing a rotating colored triangle using custom vertex and index buffers along
+    /// by drawing a rotating tree model using custom vertex and index buffers along
     /// with a custom shader effect.
     /// </summary>
     public class Game1 : Game
@@ -27,7 +27,7 @@ namespace MGCustomDrawingPipeline
         //===== 3D Rendering Components =====//
         
         /// <summary>
-        /// Stores triangle vertex data (positions and colors) in GPU memory
+        /// Stores tree vertex data (positions and colors) in GPU memory
         /// </summary>
         private VertexBuffer _vertexBuffer;
         
@@ -37,7 +37,7 @@ namespace MGCustomDrawingPipeline
         private IndexBuffer _indexBuffer;
         
         /// <summary>
-        /// Shader effect that handles the rendering of our triangle
+        /// Shader effect that handles the rendering of our tree
         /// </summary>
         private Effect _triangleEffect;
         
@@ -99,6 +99,16 @@ namespace MGCustomDrawingPipeline
         /// Toggle between normal rendering and post-processing
         /// </summary>
         private bool _usePostProcessing = false;
+
+        /// <summary>
+        /// Previous keyboard state for detecting key presses
+        /// </summary>
+        private KeyboardState _previousKeyboardState;
+
+        // Tree properties
+        private int _totalVertices;
+        private int _totalIndices;
+        private int _totalTriangles;
         #endregion
 
         /// <summary>
@@ -142,7 +152,7 @@ namespace MGCustomDrawingPipeline
             //===== BEGINNER NOTE: Rasterizer State =====//
             // The rasterizer controls how triangles are converted to pixels
             // By default, triangles facing away from the camera are not drawn (culled)
-            // We disable culling here to see our triangle from both sides
+            // We disable culling here to see our tree from both sides
             _doubleSidedRasterizerState = new RasterizerState
             {
                 // When CullMode is None, both front and back faces are drawn
@@ -168,53 +178,8 @@ namespace MGCustomDrawingPipeline
             // Create render targets for post-processing
             CreateRenderTargets();
 
-            //===== BEGINNER NOTE: What are Vertices? =====//
-            // Vertices are points in 3D space that define the corners of 3D shapes.
-            // Each vertex can have additional properties like color, texture coordinates, etc.
-            // Here we create three vertices to form a triangle:
-            //   - Each Vector3 represents (x, y, z) coordinates in 3D space
-            //   - x and y range from -1 to 1 (center of screen is 0,0)
-            //   - z is depth (positive is away from the camera)
-            //   - Each vertex also has a color assigned to it
-            var vertices = new VertexPositionColor[3]
-            {
-                // Bottom-left vertex: red color
-                new VertexPositionColor(new Vector3(-0.5f, -0.5f, 0.1f), Color.Red),
-                
-                // Top vertex: green color  
-                new VertexPositionColor(new Vector3(0, 0.5f, -0.1f), Color.Green),
-                
-                // Bottom-right vertex: blue color
-                new VertexPositionColor(new Vector3(0.5f, -0.5f, 0.1f), Color.Blue)
-            };
-
-            //===== BEGINNER NOTE: Vertex Buffers =====//
-            // A vertex buffer holds vertex data in GPU memory for fast rendering
-            // This is much more efficient than sending vertex data for each frame
-            _vertexBuffer = new VertexBuffer(
-                GraphicsDevice,              // The graphics device to use
-                typeof(VertexPositionColor), // The type of vertices we're storing
-                vertices.Length,             // How many vertices to allocate space for
-                BufferUsage.WriteOnly);      // Optimization hint (we won't read this data back)
-            
-            // Copy our vertex data to the GPU memory
-            _vertexBuffer.SetData(vertices);
-
-            //===== BEGINNER NOTE: Indices =====//
-            // Indices determine the order in which vertices are drawn to form triangles
-            // For a single triangle, this is simple (0,1,2), but for complex models
-            // using indices lets vertices be reused for multiple triangles
-            var indices = new short[] { 0, 1, 2 };  // Draw vertices in this order
-
-            // Create an index buffer to hold these indices in GPU memory
-            _indexBuffer = new IndexBuffer(
-                GraphicsDevice,              // The graphics device to use
-                IndexElementSize.SixteenBits, // Size of each index (16-bit = short)
-                indices.Length,              // How many indices to store
-                BufferUsage.WriteOnly);      // Optimization hint
-            
-            // Copy our index data to the GPU memory
-            _indexBuffer.SetData(indices);
+            // Generate tree vertices and indices instead of just a triangle
+            CreateTreeModel();
 
             //===== BEGINNER NOTE: Shaders =====//
             // Shaders are small programs that run on the GPU and control rendering
@@ -248,6 +213,163 @@ namespace MGCustomDrawingPipeline
         }
 
         /// <summary>
+        /// Creates a simple 3D tree model with a trunk and branches
+        /// </summary>
+        private void CreateTreeModel()
+        {
+            // Define the tree components
+            (VertexPositionColor[] vertices, short[] indices) = GenerateTree();
+            _totalVertices = vertices.Length;
+            _totalIndices = indices.Length;
+            _totalTriangles = indices.Length / 3;
+
+            // Create vertex buffer
+            _vertexBuffer = new VertexBuffer(
+                GraphicsDevice,
+                typeof(VertexPositionColor),
+                _totalVertices,
+                BufferUsage.WriteOnly);
+            _vertexBuffer.SetData(vertices);
+
+            // Create index buffer
+            _indexBuffer = new IndexBuffer(
+                GraphicsDevice,
+                IndexElementSize.SixteenBits,
+                _totalIndices,
+                BufferUsage.WriteOnly);
+            _indexBuffer.SetData(indices);
+        }
+
+        /// <summary>
+        /// Generates vertices and indices for a simple tree
+        /// </summary>
+        private (VertexPositionColor[] vertices, short[] indices) GenerateTree()
+        {
+            // Colors for the tree
+            Color trunkColor = new Color(139, 69, 19);    // Brown for trunk
+            Color leafColor = new Color(34, 139, 34);     // Forest green for leaves
+
+            // Create a list to hold all vertices and indices
+            var verticesList = new System.Collections.Generic.List<VertexPositionColor>();
+            var indicesList = new System.Collections.Generic.List<short>();
+            
+            // 1. Create the trunk (a simple rectangular prism)
+            Vector3 trunkBase = new Vector3(0, -0.5f, 0);
+            float trunkWidth = 0.1f;
+            float trunkHeight = 0.5f;
+            
+            // Trunk vertices (bottom square)
+            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(-trunkWidth, 0, -trunkWidth), trunkColor));
+            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(trunkWidth, 0, -trunkWidth), trunkColor));
+            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(trunkWidth, 0, trunkWidth), trunkColor));
+            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(-trunkWidth, 0, trunkWidth), trunkColor));
+            
+            // Trunk vertices (top square)
+            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(-trunkWidth, trunkHeight, -trunkWidth), trunkColor));
+            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(trunkWidth, trunkHeight, -trunkWidth), trunkColor));
+            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(trunkWidth, trunkHeight, trunkWidth), trunkColor));
+            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(-trunkWidth, trunkHeight, trunkWidth), trunkColor));
+            
+            // Trunk indices (6 faces, 2 triangles per face = 12 triangles)
+            // Bottom face
+            AddQuad(indicesList, 0, 1, 2, 3);
+            
+            // Top face
+            AddQuad(indicesList, 7, 6, 5, 4);
+            
+            // Side faces
+            AddQuad(indicesList, 0, 4, 5, 1);
+            AddQuad(indicesList, 1, 5, 6, 2);
+            AddQuad(indicesList, 2, 6, 7, 3);
+            AddQuad(indicesList, 3, 7, 4, 0);
+            
+            // 2. Create pyramid-like foliage (a simple cone approximation)
+            int baseVertex = verticesList.Count;
+            float leafRadius = 0.4f;
+            float leafHeight = 0.7f;
+            Vector3 leafBase = trunkBase + new Vector3(0, trunkHeight, 0);
+            Vector3 leafTop = leafBase + new Vector3(0, leafHeight, 0);
+            
+            // Add the top vertex of the cone
+            verticesList.Add(new VertexPositionColor(leafTop, leafColor));
+            
+            // Add vertices in a circle for the base of the cone
+            int leafSegments = 8;
+            for (int i = 0; i < leafSegments; i++)
+            {
+                float angle = i * MathHelper.TwoPi / leafSegments;
+                float x = (float)System.Math.Sin(angle) * leafRadius;
+                float z = (float)System.Math.Cos(angle) * leafRadius;
+                
+                verticesList.Add(new VertexPositionColor(leafBase + new Vector3(x, 0, z), leafColor));
+            }
+            
+            // Add triangles connecting the top to each segment of the circle
+            for (int i = 0; i < leafSegments; i++)
+            {
+                int next = (i + 1) % leafSegments;
+                indicesList.Add((short)baseVertex); // Top vertex
+                indicesList.Add((short)(baseVertex + 1 + i));
+                indicesList.Add((short)(baseVertex + 1 + next));
+            }
+            
+            // Add the bottom face of the cone (optional, as it's not usually visible)
+            for (int i = 1; i < leafSegments - 1; i++)
+            {
+                indicesList.Add((short)(baseVertex + 1));
+                indicesList.Add((short)(baseVertex + 1 + i + 1));
+                indicesList.Add((short)(baseVertex + 1 + i));
+            }
+            
+            // Create a second layer of foliage above the first
+            baseVertex = verticesList.Count;
+            leafBase = leafBase + new Vector3(0, leafHeight * 0.3f, 0);
+            leafTop = leafBase + new Vector3(0, leafHeight * 0.7f, 0);
+            leafRadius *= 0.7f;
+            
+            // Add the top vertex of the second cone
+            verticesList.Add(new VertexPositionColor(leafTop, leafColor));
+            
+            // Add vertices in a circle for the base of the second cone
+            for (int i = 0; i < leafSegments; i++)
+            {
+                float angle = i * MathHelper.TwoPi / leafSegments;
+                float x = (float)System.Math.Sin(angle) * leafRadius;
+                float z = (float)System.Math.Cos(angle) * leafRadius;
+                
+                verticesList.Add(new VertexPositionColor(leafBase + new Vector3(x, 0, z), leafColor));
+            }
+            
+            // Add triangles connecting the top to each segment of the circle
+            for (int i = 0; i < leafSegments; i++)
+            {
+                int next = (i + 1) % leafSegments;
+                indicesList.Add((short)baseVertex); // Top vertex
+                indicesList.Add((short)(baseVertex + 1 + i));
+                indicesList.Add((short)(baseVertex + 1 + next));
+            }
+            
+            // Convert lists to arrays
+            return (verticesList.ToArray(), indicesList.ToArray());
+        }
+        
+        /// <summary>
+        /// Helper method to add indices for a quad (two triangles)
+        /// </summary>
+        private void AddQuad(System.Collections.Generic.List<short> indices, int a, int b, int c, int d)
+        {
+            // First triangle
+            indices.Add((short)a);
+            indices.Add((short)b);
+            indices.Add((short)c);
+            
+            // Second triangle
+            indices.Add((short)a);
+            indices.Add((short)c);
+            indices.Add((short)d);
+        }
+
+        /// <summary>
         /// Updates the game state each frame - handles input, physics, AI, etc.
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values</param>
@@ -273,9 +395,8 @@ namespace MGCustomDrawingPipeline
             // Update rotation angles at different speeds for each axis
             // This creates a more interesting animation than rotating around
             // just one axis would
-            _rotationAngleX += 1.0f * elapsed;  // Rotate around X axis 
-            _rotationAngleY += 1.5f * elapsed;  // Rotate around Y axis (faster)
-            _rotationAngleZ += 0.7f * elapsed;  // Rotate around Z axis (slower)
+            _rotationAngleX += 0.2f * elapsed;  // Rotate around X axis (slower)
+            _rotationAngleY += 0.3f * elapsed;  // Rotate around Y axis (faster)
             
             //===== BEGINNER NOTE: Angle Management =====//
             // Keep angles between 0 and 2π (full circle in radians)
@@ -288,7 +409,6 @@ namespace MGCustomDrawingPipeline
             // Always call the base class Update method
             base.Update(gameTime);
         }
-        private KeyboardState _previousKeyboardState;
 
         /// <summary>
         /// Draws the game content to the screen
@@ -315,7 +435,7 @@ namespace MGCustomDrawingPipeline
                 // Draw directly to the screen
                 GraphicsDevice.SetRenderTarget(null);
                 GraphicsDevice.Clear(Color.CornflowerBlue);
-                DrawTriangle();
+                DrawTree();
             }
 
             // Always call the base class Draw method
@@ -323,7 +443,7 @@ namespace MGCustomDrawingPipeline
         }
         
         /// <summary>
-        /// Draws the triangle scene to the scene render target
+        /// Draws the tree scene to the scene render target
         /// </summary>
         private void DrawSceneToRenderTarget()
         {
@@ -333,26 +453,27 @@ namespace MGCustomDrawingPipeline
             // Clear the render target with dark blue color
             GraphicsDevice.Clear(Color.CornflowerBlue);
             
-            // Draw the triangle
-            DrawTriangle();
+            // Draw the tree
+            DrawTree();
         }
         
         /// <summary>
-        /// Draws the rotating triangle
+        /// Draws the rotating tree
         /// </summary>
-        private void DrawTriangle()
+        private void DrawTree()
         {
-            // Apply our double-sided rendering settings so triangle is visible from both sides
+            // Enable depth testing to correctly handle overlapping triangles
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             GraphicsDevice.RasterizerState = _doubleSidedRasterizerState;
 
             // Tell the GPU which vertices and indices to use for drawing
             GraphicsDevice.SetVertexBuffer(_vertexBuffer);
             GraphicsDevice.Indices = _indexBuffer;
 
-            // Create a world matrix that combines rotations around all three axes
+            // Position the tree slightly back from the camera for better viewing
             Matrix world = Matrix.CreateRotationX(_rotationAngleX) * 
                           Matrix.CreateRotationY(_rotationAngleY) * 
-                          Matrix.CreateRotationZ(_rotationAngleZ);
+                          Matrix.CreateTranslation(0, 0, -0.5f);
             
             // Create a view matrix - this is like placing a camera in the world
             Matrix view = Matrix.CreateLookAt(
@@ -370,7 +491,7 @@ namespace MGCustomDrawingPipeline
             // Send the transformation matrix to the shader
             _triangleEffect.Parameters["WorldViewProjection"].SetValue(world * view * projection);
 
-            // Draw the triangle using our shader
+            // Draw the tree using our shader
             foreach (EffectPass pass in _triangleEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
@@ -378,7 +499,7 @@ namespace MGCustomDrawingPipeline
                     PrimitiveType.TriangleList,
                     0,       // Base vertex offset
                     0,       // Start index
-                    1        // Number of triangles
+                    _totalTriangles // Number of triangles
                 );
             }
         }
