@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
+using MGCustomDrawingPipeline.VertexTypes;
 
 namespace MGCustomDrawingPipeline
 {
@@ -15,180 +16,23 @@ namespace MGCustomDrawingPipeline
     /// </summary>
     public class Game1 : Game
     {
-        #region Fields
         /// <summary>
-        /// Manages the graphics device and provides methods for setting display modes
+        /// Contains all game state fields
         /// </summary>
-        private GraphicsDeviceManager _graphics;
-        
-        /// <summary>
-        /// Helper for drawing sprites (not used in this demo, but commonly included)
-        /// </summary>
-        private SpriteBatch _spriteBatch;
-        
-        //===== 3D Rendering Components =====//
-        
-        /// <summary>
-        /// Stores tree vertex data (positions and texture coordinates) in GPU memory
-        /// </summary>
-        private VertexBuffer _vertexBuffer;
-        
-        /// <summary>
-        /// Stores the order in which vertices should be drawn to form triangles
-        /// </summary>
-        private IndexBuffer _indexBuffer;
-        
-        /// <summary>
-        /// Shader effect that handles the rendering of our tree
-        /// </summary>
-        private Effect _triangleEffect;
-        
-        /// <summary>
-        /// Defines the layout of our vertex data (not used in this demo, but declared for completeness)
-        /// </summary>
-        private VertexDeclaration _vertexDeclaration;
-        
-        /// <summary>
-        /// Texture for trunk color (1x1 pixel brown)
-        /// </summary>
-        private Texture2D _trunkTexture;
-        
-        /// <summary>
-        /// Texture for leaf color (1x1 pixel green)
-        /// </summary>
-        private Texture2D _leafTexture;
-        
-        //===== Post-Processing Components =====//
-        
-        /// <summary>
-        /// Render target for the main scene
-        /// </summary>
-        private RenderTarget2D _sceneRenderTarget;
-        
-        /// <summary>
-        /// Shader effect for the bloom post-processing
-        /// This shader implements a multi-pass bloom effect targeting specific colors
-        /// </summary>
-        private Effect _bloomEffect;
-        
-        /// <summary>
-        /// Bloom intensity parameter
-        /// Controls how bright the bloom effect appears in the final image
-        /// </summary>
-        private float _bloomIntensity = 1.5f;
-        
-        /// <summary>
-        /// Bloom threshold parameter
-        /// Determines the minimum brightness level that will produce bloom
-        /// </summary>
-        private float _bloomThreshold = 0.2f;
-        
-        /// <summary>
-        /// Bloom blur amount parameter
-        /// Controls the spread of the bloom effect
-        /// </summary>
-        private float _bloomBlurAmount = 4.0f;
-        
-        /// <summary>
-        /// Render target for bloom extraction
-        /// Stores the extracted colors from the scene
-        /// </summary>
-        private RenderTarget2D _bloomExtractTarget;
-        
-        /// <summary>
-        /// Render target for horizontal blur
-        /// Stores the intermediate result of applying horizontal Gaussian blur
-        /// </summary>
-        private RenderTarget2D _bloomHorizontalBlurTarget;
-        
-        /// <summary>
-        /// Render target for vertical blur
-        /// Stores the result of applying vertical Gaussian blur to the horizontal blur result
-        /// </summary>
-        private RenderTarget2D _bloomVerticalBlurTarget;
-        
-        /// <summary>
-        /// Sensitivity for blue color bloom extraction
-        /// Higher values make more shades of blue produce bloom
-        /// </summary>
-        private float _colorSensitivity = 0.35f;
-        
-        /// <summary>
-        /// Target blue color for bloom extraction
-        /// This color specifically targets the cornflower blue background
-        /// </summary>
-        private Vector3 _targetBlueColor = new Vector3(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f); // CornflowerBlue
-        
-        //===== Animation Properties =====//
-        
-        /// <summary>
-        /// Current rotation angle around X axis (in radians)
-        /// </summary>
-        private float _rotationAngleX = 0f;
-        
-        /// <summary>
-        /// Current rotation angle around Y axis (in radians)
-        /// </summary>
-        private float _rotationAngleY = 0f;
-        
-        /// <summary>
-        /// Current rotation angle around Z axis (in radians)
-        /// </summary>
-        private float _rotationAngleZ = 0f;
-        
-        /// <summary>
-        /// Determines how triangles are drawn (front/back face rendering)
-        /// </summary>
-        private RasterizerState _doubleSidedRasterizerState;
-        
-        /// <summary>
-        /// Toggle between normal rendering and post-processing
-        /// </summary>
-        private bool _usePostProcessing = false;
-
-        /// <summary>
-        /// Previous keyboard state for detecting key presses
-        /// </summary>
-        private KeyboardState _previousKeyboardState;
-
-        // Tree properties
-        private int _totalVertices;
-        private int _totalIndices;
-        private int _totalTriangles;
-        #endregion
-
-        /// <summary>
-        /// A vertex structure containing position and texture coordinates
-        /// </summary>
-        public struct VertexPositionTexture : IVertexType
-        {
-            public Vector3 Position;
-            public Vector2 TextureCoordinate;
-            
-            public readonly static VertexDeclaration VertexDeclaration = new VertexDeclaration(
-                new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
-                new VertexElement(sizeof(float) * 3, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 0)
-            );
-
-            public VertexPositionTexture(Vector3 position, Vector2 textureCoordinate)
-            {
-                Position = position;
-                TextureCoordinate = textureCoordinate;
-            }
-
-            VertexDeclaration IVertexType.VertexDeclaration => VertexDeclaration;
-        }
+        private GameState _state;
 
         /// <summary>
         /// Constructor - initializes the game
         /// </summary>
         public Game1()
         {
+            _state = new GameState();
+            
             // Create the graphics manager - this is required for any MonoGame project
-            _graphics = new GraphicsDeviceManager(this);
+            _state.Graphics = new GraphicsDeviceManager(this);
             
             // Set the graphics profile to HiDef for higher quality rendering and more advanced shader support
-            _graphics.GraphicsProfile = GraphicsProfile.HiDef;
+            _state.Graphics.GraphicsProfile = GraphicsProfile.HiDef;
             
             // Set the folder where game content (like shaders) will be loaded from
             Content.RootDirectory = "Content";
@@ -206,22 +50,22 @@ namespace MGCustomDrawingPipeline
             // Here we configure the game window's size. This determines how large
             // our rendering area will be. Larger values give more detailed visuals
             // but may reduce performance on lower-end machines.
-            _graphics.PreferredBackBufferWidth = 800;  // Width in pixels
-            _graphics.PreferredBackBufferHeight = 600; // Height in pixels
+            _state.Graphics.PreferredBackBufferWidth = 800;  // Width in pixels
+            _state.Graphics.PreferredBackBufferHeight = 600; // Height in pixels
             
             // Enable anti-aliasing for smoother edges (HiDef profile supports this)
-            _graphics.PreferMultiSampling = true;
+            _state.Graphics.PreferMultiSampling = true;
             
             // Use 24-bit depth buffer with 8-bit stencil for better precision in 3D rendering
-            _graphics.PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8;
+            _state.Graphics.PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8;
             
-            _graphics.ApplyChanges();                  // Apply the new settings
+            _state.Graphics.ApplyChanges();                  // Apply the new settings
             
             //===== BEGINNER NOTE: Rasterizer State =====//
             // The rasterizer controls how triangles are converted to pixels
             // By default, triangles facing away from the camera are not drawn (culled)
             // We disable culling here to see our tree from both sides
-            _doubleSidedRasterizerState = new RasterizerState
+            _state.DoubleSidedRasterizerState = new RasterizerState
             {
                 // When CullMode is None, both front and back faces are drawn
                 CullMode = CullMode.None,  
@@ -241,7 +85,7 @@ namespace MGCustomDrawingPipeline
         protected override void LoadContent()
         {
             // Create a new SpriteBatch for drawing 2D graphics
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
+            _state.SpriteBatch = new SpriteBatch(GraphicsDevice);
 
             // Create render targets for post-processing
             CreateRenderTargets();
@@ -253,10 +97,10 @@ namespace MGCustomDrawingPipeline
             CreateTreeModel();
 
             // Load the tree rendering shader
-            _triangleEffect = Content.Load<Effect>("TriangleShader");
+            _state.TriangleEffect = Content.Load<Effect>("TriangleShader");
             
             // Load the bloom post-processing shader
-            _bloomEffect = Content.Load<Effect>("BloomShader");
+            _state.BloomEffect = Content.Load<Effect>("BloomShader");
         }
         
         /// <summary>
@@ -275,10 +119,10 @@ namespace MGCustomDrawingPipeline
         private void CreateColorTextures()
         {
             // Brown color for trunk
-            _trunkTexture = Create1x1Texture(new Color(139, 69, 19));
+            _state.TrunkTexture = Create1x1Texture(new Color(139, 69, 19));
             
             // Green color for leaves
-            _leafTexture = Create1x1Texture(new Color(34, 139, 34));
+            _state.LeafTexture = Create1x1Texture(new Color(34, 139, 34));
         }
         
         /// <summary>
@@ -291,7 +135,7 @@ namespace MGCustomDrawingPipeline
             int height = GraphicsDevice.PresentationParameters.BackBufferHeight;
             
             // Create the main scene render target with depth buffer for 3D rendering
-            _sceneRenderTarget = new RenderTarget2D(
+            _state.SceneRenderTarget = new RenderTarget2D(
                 GraphicsDevice,
                 width,
                 height,
@@ -301,7 +145,7 @@ namespace MGCustomDrawingPipeline
                 
             // Create render targets for the multi-pass bloom effect pipeline
             // These don't need depth buffers since they're used for 2D post-processing
-            _bloomExtractTarget = new RenderTarget2D(
+            _state.BloomExtractTarget = new RenderTarget2D(
                 GraphicsDevice,
                 width,
                 height,
@@ -309,7 +153,7 @@ namespace MGCustomDrawingPipeline
                 SurfaceFormat.Color,
                 DepthFormat.None);
                 
-            _bloomHorizontalBlurTarget = new RenderTarget2D(
+            _state.BloomHorizontalBlurTarget = new RenderTarget2D(
                 GraphicsDevice,
                 width,
                 height,
@@ -317,7 +161,7 @@ namespace MGCustomDrawingPipeline
                 SurfaceFormat.Color,
                 DepthFormat.None);
                 
-            _bloomVerticalBlurTarget = new RenderTarget2D(
+            _state.BloomVerticalBlurTarget = new RenderTarget2D(
                 GraphicsDevice,
                 width,
                 height,
@@ -332,35 +176,35 @@ namespace MGCustomDrawingPipeline
         private void CreateTreeModel()
         {
             // Define the tree components
-            (VertexPositionTexture[] vertices, short[] indices) = GenerateTree();
-            _totalVertices = vertices.Length;
-            _totalIndices = indices.Length;
-            _totalTriangles = indices.Length / 3;
+            (MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture[] vertices, short[] indices) = GenerateTree();
+            _state.TotalVertices = vertices.Length;
+            _state.TotalIndices = indices.Length;
+            _state.TotalTriangles = indices.Length / 3;
 
             // Create vertex buffer
-            _vertexBuffer = new VertexBuffer(
+            _state.VertexBuffer = new VertexBuffer(
                 GraphicsDevice,
-                VertexPositionTexture.VertexDeclaration,
-                _totalVertices,
+                MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture.VertexDeclaration,
+                _state.TotalVertices,
                 BufferUsage.WriteOnly);
-            _vertexBuffer.SetData(vertices);
+            _state.VertexBuffer.SetData(vertices);
 
             // Create index buffer
-            _indexBuffer = new IndexBuffer(
+            _state.IndexBuffer = new IndexBuffer(
                 GraphicsDevice,
                 IndexElementSize.SixteenBits,
-                _totalIndices,
+                _state.TotalIndices,
                 BufferUsage.WriteOnly);
-            _indexBuffer.SetData(indices);
+            _state.IndexBuffer.SetData(indices);
         }
 
         /// <summary>
         /// Generates vertices and indices for a simple tree
         /// </summary>
-        private (VertexPositionTexture[] vertices, short[] indices) GenerateTree()
+        private (MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture[] vertices, short[] indices) GenerateTree()
         {
             // Create a list to hold all vertices and indices
-            var verticesList = new List<VertexPositionTexture>();
+            var verticesList = new List<MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture>();
             var indicesList = new List<short>();
             
             // For 1x1 textures, we can use any texture coordinate
@@ -373,16 +217,16 @@ namespace MGCustomDrawingPipeline
             float trunkHeight = 0.5f;
             
             // Trunk vertices (bottom square)
-            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, -trunkWidth), texCoord));
-            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, -trunkWidth), texCoord));
-            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, trunkWidth), texCoord));
-            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, trunkWidth), texCoord));
+            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, -trunkWidth), texCoord));
+            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, -trunkWidth), texCoord));
+            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, trunkWidth), texCoord));
+            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, trunkWidth), texCoord));
             
             // Trunk vertices (top square)
-            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, -trunkWidth), texCoord));
-            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, -trunkWidth), texCoord));
-            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, trunkWidth), texCoord));
-            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, trunkWidth), texCoord));
+            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, -trunkWidth), texCoord));
+            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, -trunkWidth), texCoord));
+            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, trunkWidth), texCoord));
+            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, trunkWidth), texCoord));
             
             // Trunk indices (6 faces, 2 triangles per face = 12 triangles)
             // Bottom face
@@ -405,7 +249,7 @@ namespace MGCustomDrawingPipeline
             Vector3 leafTop = leafBase + new Vector3(0, leafHeight, 0);
             
             // Add the top vertex of the cone
-            verticesList.Add(new VertexPositionTexture(leafTop, texCoord));
+            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafTop, texCoord));
             
             // Add vertices in a circle for the base of the cone
             int leafSegments = 8;
@@ -415,7 +259,7 @@ namespace MGCustomDrawingPipeline
                 float x = (float)System.Math.Sin(angle) * leafRadius;
                 float z = (float)System.Math.Cos(angle) * leafRadius;
                 
-                verticesList.Add(new VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
+                verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
             }
             
             // Add triangles connecting the top to each segment of the circle
@@ -442,7 +286,7 @@ namespace MGCustomDrawingPipeline
             leafRadius *= 0.7f;
             
             // Add the top vertex of the second cone
-            verticesList.Add(new VertexPositionTexture(leafTop, texCoord));
+            verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafTop, texCoord));
             
             // Add vertices in a circle for the base of the second cone
             for (int i = 0; i < leafSegments; i++)
@@ -451,7 +295,7 @@ namespace MGCustomDrawingPipeline
                 float x = (float)System.Math.Sin(angle) * leafRadius;
                 float z = (float)System.Math.Cos(angle) * leafRadius;
                 
-                verticesList.Add(new VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
+                verticesList.Add(new MGCustomDrawingPipeline.VertexTypes.VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
             }
             
             // Add triangles connecting the top to each segment of the circle
@@ -493,13 +337,13 @@ namespace MGCustomDrawingPipeline
             KeyboardState keyboardState = Keyboard.GetState();
             
             // Toggle post-processing with P key
-            if (keyboardState.IsKeyDown(Keys.P) && !_previousKeyboardState.IsKeyDown(Keys.P))
+            if (keyboardState.IsKeyDown(Keys.P) && !_state.PreviousKeyboardState.IsKeyDown(Keys.P))
             {
-                _usePostProcessing = !_usePostProcessing;
+                _state.UsePostProcessing = !_state.UsePostProcessing;
             }
             
             // Store current keyboard state for next frame
-            _previousKeyboardState = keyboardState;
+            _state.PreviousKeyboardState = keyboardState;
             
             //===== BEGINNER NOTE: Time-Based Animation =====//
             // To make animations smooth regardless of frame rate, we adjust
@@ -509,16 +353,16 @@ namespace MGCustomDrawingPipeline
             // Update rotation angles at different speeds for each axis
             // This creates a more interesting animation than rotating around
             // just one axis would
-            _rotationAngleX += 0.2f * elapsed;  // Rotate around X axis (slower)
-            _rotationAngleY += 0.3f * elapsed;  // Rotate around Y axis (faster)
+            _state.RotationAngleX += 0.2f * elapsed;  // Rotate around X axis (slower)
+            _state.RotationAngleY += 0.3f * elapsed;  // Rotate around Y axis (faster)
             
             //===== BEGINNER NOTE: Angle Management =====//
             // Keep angles between 0 and 2π (full circle in radians)
             // This isn't strictly necessary but prevents the values from
             // growing too large over time which could cause precision issues
-            _rotationAngleX %= MathHelper.TwoPi;  // 2π ≈ 6.28 radians = 360 degrees
-            _rotationAngleY %= MathHelper.TwoPi;
-            _rotationAngleZ %= MathHelper.TwoPi;
+            _state.RotationAngleX %= MathHelper.TwoPi;  // 2π ≈ 6.28 radians = 360 degrees
+            _state.RotationAngleY %= MathHelper.TwoPi;
+            _state.RotationAngleZ %= MathHelper.TwoPi;
 
             // Always call the base class Update method
             base.Update(gameTime);
@@ -530,7 +374,7 @@ namespace MGCustomDrawingPipeline
         /// <param name="gameTime">Provides a snapshot of timing values</param>
         protected override void Draw(GameTime gameTime)
         {
-            if (_usePostProcessing)
+            if (_state.UsePostProcessing)
             {
                 // Apply the multi-pass bloom post-processing to the scene
                 DrawSceneToRenderTarget();
@@ -539,9 +383,9 @@ namespace MGCustomDrawingPipeline
                 GraphicsDevice.SetRenderTarget(null);
                 GraphicsDevice.Clear(Color.Black);
                 
-                _spriteBatch.Begin();
-                _spriteBatch.Draw(_sceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
-                _spriteBatch.End();
+                _state.SpriteBatch.Begin();
+                _state.SpriteBatch.Draw(_state.SceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+                _state.SpriteBatch.End();
             }
             else
             {
@@ -560,75 +404,75 @@ namespace MGCustomDrawingPipeline
         private void DrawSceneToRenderTarget()
         {
             // STEP 1: Render the tree scene to the main render target
-            GraphicsDevice.SetRenderTarget(_sceneRenderTarget);
+            GraphicsDevice.SetRenderTarget(_state.SceneRenderTarget);
             GraphicsDevice.Clear(Color.CornflowerBlue);
             DrawTree();
             
             // STEP 2: Extract the blue colors from the scene into a separate render target
-            GraphicsDevice.SetRenderTarget(_bloomExtractTarget);
+            GraphicsDevice.SetRenderTarget(_state.BloomExtractTarget);
             GraphicsDevice.Clear(Color.Black);
             
             // Configure the shader parameters for blue color extraction
-            _bloomEffect.Parameters["InputTexture"].SetValue(_sceneRenderTarget);
-            _bloomEffect.Parameters["BloomThreshold"].SetValue(_bloomThreshold);
-            _bloomEffect.Parameters["TargetColor"].SetValue(_targetBlueColor);
-            _bloomEffect.Parameters["ColorSensitivity"].SetValue(_colorSensitivity);
-            _bloomEffect.Parameters["ScreenSize"].SetValue(new Vector2(
+            _state.BloomEffect.Parameters["InputTexture"].SetValue(_state.SceneRenderTarget);
+            _state.BloomEffect.Parameters["BloomThreshold"].SetValue(_state.BloomThreshold);
+            _state.BloomEffect.Parameters["TargetColor"].SetValue(_state.TargetBlueColor);
+            _state.BloomEffect.Parameters["ColorSensitivity"].SetValue(_state.ColorSensitivity);
+            _state.BloomEffect.Parameters["ScreenSize"].SetValue(new Vector2(
                 GraphicsDevice.Viewport.Width, 
                 GraphicsDevice.Viewport.Height));
             
             // Apply the blue bloom extraction shader technique
-            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
-            _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["BlueBloomExtract"];
-            _bloomEffect.CurrentTechnique.Passes[0].Apply();
-            _spriteBatch.Draw(_sceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
-            _spriteBatch.End();
+            _state.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
+            _state.BloomEffect.CurrentTechnique = _state.BloomEffect.Techniques["BlueBloomExtract"];
+            _state.BloomEffect.CurrentTechnique.Passes[0].Apply();
+            _state.SpriteBatch.Draw(_state.SceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+            _state.SpriteBatch.End();
             
             // STEP 3: Apply horizontal Gaussian blur to the extracted blue colors
-            GraphicsDevice.SetRenderTarget(_bloomHorizontalBlurTarget);
+            GraphicsDevice.SetRenderTarget(_state.BloomHorizontalBlurTarget);
             GraphicsDevice.Clear(Color.Black);
             
             // Configure shader parameters for horizontal blur pass
-            _bloomEffect.Parameters["InputTexture"].SetValue(_bloomExtractTarget);
-            _bloomEffect.Parameters["BlurAmount"].SetValue(_bloomBlurAmount);
-            _bloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(1, 0)); // Horizontal direction
+            _state.BloomEffect.Parameters["InputTexture"].SetValue(_state.BloomExtractTarget);
+            _state.BloomEffect.Parameters["BlurAmount"].SetValue(_state.BloomBlurAmount);
+            _state.BloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(1, 0)); // Horizontal direction
             
             // Apply the horizontal Gaussian blur
-            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
-            _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["GaussianBlur"];
-            _bloomEffect.CurrentTechnique.Passes[0].Apply();
-            _spriteBatch.Draw(_bloomExtractTarget, GraphicsDevice.Viewport.Bounds, Color.White);
-            _spriteBatch.End();
+            _state.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
+            _state.BloomEffect.CurrentTechnique = _state.BloomEffect.Techniques["GaussianBlur"];
+            _state.BloomEffect.CurrentTechnique.Passes[0].Apply();
+            _state.SpriteBatch.Draw(_state.BloomExtractTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+            _state.SpriteBatch.End();
             
             // STEP 4: Apply vertical Gaussian blur to complete the bloom blur effect
-            GraphicsDevice.SetRenderTarget(_bloomVerticalBlurTarget);
+            GraphicsDevice.SetRenderTarget(_state.BloomVerticalBlurTarget);
             GraphicsDevice.Clear(Color.Black);
             
             // Configure shader parameters for vertical blur pass
-            _bloomEffect.Parameters["InputTexture"].SetValue(_bloomHorizontalBlurTarget);
-            _bloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(0, 1)); // Vertical direction
+            _state.BloomEffect.Parameters["InputTexture"].SetValue(_state.BloomHorizontalBlurTarget);
+            _state.BloomEffect.Parameters["BlurDirection"].SetValue(new Vector2(0, 1)); // Vertical direction
             
             // Apply the vertical Gaussian blur
-            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
-            _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["GaussianBlur"];
-            _bloomEffect.CurrentTechnique.Passes[0].Apply();
-            _spriteBatch.Draw(_bloomHorizontalBlurTarget, GraphicsDevice.Viewport.Bounds, Color.White);
-            _spriteBatch.End();
+            _state.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
+            _state.BloomEffect.CurrentTechnique = _state.BloomEffect.Techniques["GaussianBlur"];
+            _state.BloomEffect.CurrentTechnique.Passes[0].Apply();
+            _state.SpriteBatch.Draw(_state.BloomHorizontalBlurTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+            _state.SpriteBatch.End();
             
             // STEP 5: Combine the original scene with the blurred bloom effect
-            GraphicsDevice.SetRenderTarget(_sceneRenderTarget);
+            GraphicsDevice.SetRenderTarget(_state.SceneRenderTarget);
             
             // Configure shader parameters for the final composition
-            _bloomEffect.Parameters["BaseTexture"].SetValue(_sceneRenderTarget);
-            _bloomEffect.Parameters["BloomTexture"].SetValue(_bloomVerticalBlurTarget);
-            _bloomEffect.Parameters["BloomIntensity"].SetValue(_bloomIntensity);
+            _state.BloomEffect.Parameters["BaseTexture"].SetValue(_state.SceneRenderTarget);
+            _state.BloomEffect.Parameters["BloomTexture"].SetValue(_state.BloomVerticalBlurTarget);
+            _state.BloomEffect.Parameters["BloomIntensity"].SetValue(_state.BloomIntensity);
             
             // Apply the bloom combine technique to produce the final image
-            _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
-            _bloomEffect.CurrentTechnique = _bloomEffect.Techniques["BloomCombine"];
-            _bloomEffect.CurrentTechnique.Passes[0].Apply();
-            _spriteBatch.Draw(_sceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
-            _spriteBatch.End();
+            _state.SpriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Opaque);
+            _state.BloomEffect.CurrentTechnique = _state.BloomEffect.Techniques["BloomCombine"];
+            _state.BloomEffect.CurrentTechnique.Passes[0].Apply();
+            _state.SpriteBatch.Draw(_state.SceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+            _state.SpriteBatch.End();
         }
         
         /// <summary>
@@ -638,15 +482,15 @@ namespace MGCustomDrawingPipeline
         {
             // Enable depth testing to correctly handle overlapping triangles
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-            GraphicsDevice.RasterizerState = _doubleSidedRasterizerState;
+            GraphicsDevice.RasterizerState = _state.DoubleSidedRasterizerState;
 
             // Tell the GPU which vertices and indices to use for drawing
-            GraphicsDevice.SetVertexBuffer(_vertexBuffer);
-            GraphicsDevice.Indices = _indexBuffer;
+            GraphicsDevice.SetVertexBuffer(_state.VertexBuffer);
+            GraphicsDevice.Indices = _state.IndexBuffer;
 
             // Position the tree slightly back from the camera for better viewing
-            Matrix world = Matrix.CreateRotationX(_rotationAngleX) * 
-                          Matrix.CreateRotationY(_rotationAngleY) * 
+            Matrix world = Matrix.CreateRotationX(_state.RotationAngleX) * 
+                          Matrix.CreateRotationY(_state.RotationAngleY) * 
                           Matrix.CreateTranslation(0, 0, -0.5f);
             
             // Create a view matrix - this is like placing a camera in the world
@@ -663,12 +507,12 @@ namespace MGCustomDrawingPipeline
                 100.0f);                               // Far clipping plane (max render distance)
 
             // Send the transformation matrix to the shader
-            _triangleEffect.Parameters["WorldViewProjection"].SetValue(world * view * projection);
+            _state.TriangleEffect.Parameters["WorldViewProjection"].SetValue(world * view * projection);
             
             // First draw the trunk
-            _triangleEffect.Parameters["ModelTexture"].SetValue(_trunkTexture);
+            _state.TriangleEffect.Parameters["ModelTexture"].SetValue(_state.TrunkTexture);
             
-            foreach (EffectPass pass in _triangleEffect.CurrentTechnique.Passes)
+            foreach (EffectPass pass in _state.TriangleEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
                 
@@ -682,9 +526,9 @@ namespace MGCustomDrawingPipeline
             }
             
             // Then draw the foliage
-            _triangleEffect.Parameters["ModelTexture"].SetValue(_leafTexture);
+            _state.TriangleEffect.Parameters["ModelTexture"].SetValue(_state.LeafTexture);
             
-            foreach (EffectPass pass in _triangleEffect.CurrentTechnique.Passes)
+            foreach (EffectPass pass in _state.TriangleEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
                 
@@ -693,7 +537,7 @@ namespace MGCustomDrawingPipeline
                     PrimitiveType.TriangleList,
                     0,            // Base vertex offset
                     12 * 3,       // Start index (after trunk triangles)
-                    _totalTriangles - 12  // Number of triangles for foliage
+                    _state.TotalTriangles - 12  // Number of triangles for foliage
                 );
             }
         }
@@ -704,19 +548,19 @@ namespace MGCustomDrawingPipeline
         protected override void UnloadContent()
         {
             // Dispose GPU resources to prevent memory leaks
-            _vertexBuffer?.Dispose();
-            _indexBuffer?.Dispose();
-            _doubleSidedRasterizerState?.Dispose();
+            _state.VertexBuffer?.Dispose();
+            _state.IndexBuffer?.Dispose();
+            _state.DoubleSidedRasterizerState?.Dispose();
             
             // Dispose textures
-            _trunkTexture?.Dispose();
-            _leafTexture?.Dispose();
+            _state.TrunkTexture?.Dispose();
+            _state.LeafTexture?.Dispose();
             
             // Dispose all render targets used in the post-processing pipeline
-            _sceneRenderTarget?.Dispose();
-            _bloomExtractTarget?.Dispose();
-            _bloomHorizontalBlurTarget?.Dispose();
-            _bloomVerticalBlurTarget?.Dispose();
+            _state.SceneRenderTarget?.Dispose();
+            _state.BloomExtractTarget?.Dispose();
+            _state.BloomHorizontalBlurTarget?.Dispose();
+            _state.BloomVerticalBlurTarget?.Dispose();
             
             base.UnloadContent();
         }
