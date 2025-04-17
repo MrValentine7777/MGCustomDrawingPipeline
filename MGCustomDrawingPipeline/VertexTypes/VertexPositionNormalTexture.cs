@@ -7,8 +7,23 @@ namespace MGCustomDrawingPipeline.VertexTypes
     /// A custom vertex structure containing position, normal vector, and texture coordinates
     /// Renamed to avoid conflict with MonoGame's built-in VertexPositionNormalTexture
     /// 
-    /// This vertex structure is used for 3D models that require lighting calculations.
-    /// The normal vector is essential for determining how light interacts with the surface.
+    /// ===== BEGINNER'S GUIDE: VERTEX STRUCTURES =====
+    /// 
+    /// In 3D graphics, vertices are the fundamental building blocks of all models.
+    /// A vertex is a point in 3D space that includes additional data beyond just position:
+    /// 
+    /// 1. Position - Where the point is located in 3D space (x, y, z coordinates)
+    /// 2. Normal - A directional vector used for lighting calculations
+    /// 3. Texture Coordinates - Values that map images onto the surface (u, v coordinates)
+    /// 
+    /// Vertex structures must be carefully designed to:
+    /// - Include all necessary data for your rendering needs
+    /// - Be memory-efficient (more data = more memory and bandwidth usage)
+    /// - Follow a layout that the GPU can process efficiently
+    /// 
+    /// Custom vertex structures must implement IVertexType to tell the graphics system
+    /// how to interpret the data when sending it to the GPU. The VertexDeclaration
+    /// provides this information to the graphics pipeline.
     /// </summary>
     public struct CustomVertexPositionNormalTexture : IVertexType
     {

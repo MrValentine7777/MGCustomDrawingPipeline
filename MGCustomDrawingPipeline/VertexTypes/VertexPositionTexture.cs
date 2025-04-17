@@ -6,9 +6,24 @@ namespace MGCustomDrawingPipeline.VertexTypes
     /// <summary>
     /// A vertex structure containing position and texture coordinates
     /// 
-    /// This is a simpler vertex structure that doesn't include normal vectors.
-    /// It's suitable for objects that don't need lighting calculations,
-    /// such as backgrounds, skyboxes, or 2D sprites rendered in 3D space.
+    /// ===== BEGINNER'S GUIDE: SIMPLIFIED VERTEX STRUCTURES =====
+    /// 
+    /// Not all 3D graphics require the same level of detail. When lighting calculations
+    /// aren't needed, we can use simpler vertex structures like this one that omit normal data.
+    /// 
+    /// Simpler vertex structures offer several advantages:
+    /// 1. Reduced Memory Usage - Less data per vertex means lower memory consumption
+    /// 2. Better Performance - Less data to process and transfer to the GPU
+    /// 3. Simpler Shaders - Vertex and pixel shaders can be less complex
+    /// 
+    /// Common use cases for position+texture vertices include:
+    /// - UI elements and 2D sprites rendered in 3D space
+    /// - Skyboxes that don't require lighting
+    /// - Particle effects where lighting isn't calculated per-vertex
+    /// - Post-processing full-screen quads (like our bloom effect)
+    /// 
+    /// When designing your application, choose the simplest vertex structure that meets
+    /// your visual requirements to maximize performance.
     /// </summary>
     public struct VertexPositionTexture : IVertexType
     {
