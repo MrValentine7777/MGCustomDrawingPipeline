@@ -32,6 +32,17 @@
 // It's used to convert 3D positions to 2D screen coordinates
 matrix WorldViewProjection;
 
+// Texture used for coloring the model
+texture ModelTexture;
+sampler2D ModelTextureSampler = sampler_state
+{
+    Texture = <ModelTexture>;
+    MinFilter = Point;  // Use point filtering for 1x1 textures
+    MagFilter = Point;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+
 //========================================================================
 // DATA STRUCTURES
 //========================================================================
@@ -39,16 +50,16 @@ matrix WorldViewProjection;
 // These values come from the C# code for each vertex
 struct VertexShaderInput
 {
-    float4 Position : POSITION0;  // Position in 3D space (x,y,z,w)
-    float4 Color : COLOR0;        // Color of the vertex (r,g,b,a)
+    float4 Position : POSITION0;        // Position in 3D space (x,y,z,w)
+    float2 TextureCoord : TEXCOORD0;    // Texture coordinates (u,v)
 };
 
 // Output structure from vertex shader to pixel shader
 // This data is interpolated (blended) across the triangle
 struct VertexShaderOutput
 {
-    float4 Position : SV_POSITION;  // Screen position (required output)
-    float4 Color : COLOR0;          // Color to pass to pixel shader
+    float4 Position : SV_POSITION;       // Screen position (required output)
+    float2 TextureCoord : TEXCOORD0;     // Texture coordinates to pass to pixel shader
 };
 
 //========================================================================
@@ -64,9 +75,8 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     // This converts the vertex from 3D model space to 2D screen space
     output.Position = mul(input.Position, WorldViewProjection);
     
-    // Pass the vertex color directly to the pixel shader
-    // This will allow colors to be blended across the triangle
-    output.Color = input.Color;
+    // Pass the texture coordinates to the pixel shader
+    output.TextureCoord = input.TextureCoord;
     
     return output;
 }
@@ -78,9 +88,8 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 // It determines the final color that appears on screen
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
-    // Simply return the interpolated color
-    // This creates a smooth gradient between the vertex colors
-    return input.Color;
+    // Sample the texture color at the current texture coordinate
+    return tex2D(ModelTextureSampler, input.TextureCoord);
 }
 
 //========================================================================
@@ -94,14 +103,6 @@ technique BasicColorDrawing
     pass Pass1
     {
         // Specify which shaders to use
-        VertexShader = compile VS_SHADERMODEL MainVS();
-        PixelShader = compile PS_SHADERMODEL MainPS();
-    }
-    
-    // Second pass (not used in this example, but could be used
-    // for multi-pass effects like outlines, glow, etc.)
-    pass Pass2
-    {
         VertexShader = compile VS_SHADERMODEL MainVS();
         PixelShader = compile PS_SHADERMODEL MainPS();
     }

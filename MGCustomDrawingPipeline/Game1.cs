@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
 
 namespace MGCustomDrawingPipeline
 {
@@ -10,7 +11,7 @@ namespace MGCustomDrawingPipeline
     /// This application demonstrates how to create a basic 3D rendering pipeline in MonoGame
     /// by drawing a rotating tree model using custom vertex and index buffers along
     /// with a custom shader effect. It also implements a color-targeted bloom post-processing
-    /// effect that makes the green foliage of the tree glow.
+    /// effect that makes the tree's foliage glow.
     /// </summary>
     public class Game1 : Game
     {
@@ -28,7 +29,7 @@ namespace MGCustomDrawingPipeline
         //===== 3D Rendering Components =====//
         
         /// <summary>
-        /// Stores tree vertex data (positions and colors) in GPU memory
+        /// Stores tree vertex data (positions and texture coordinates) in GPU memory
         /// </summary>
         private VertexBuffer _vertexBuffer;
         
@@ -46,6 +47,16 @@ namespace MGCustomDrawingPipeline
         /// Defines the layout of our vertex data (not used in this demo, but declared for completeness)
         /// </summary>
         private VertexDeclaration _vertexDeclaration;
+        
+        /// <summary>
+        /// Texture for trunk color (1x1 pixel brown)
+        /// </summary>
+        private Texture2D _trunkTexture;
+        
+        /// <summary>
+        /// Texture for leaf color (1x1 pixel green)
+        /// </summary>
+        private Texture2D _leafTexture;
         
         //===== Post-Processing Components =====//
         
@@ -80,7 +91,7 @@ namespace MGCustomDrawingPipeline
         
         /// <summary>
         /// Render target for bloom extraction
-        /// Stores the extracted green colors from the scene
+        /// Stores the extracted colors from the scene
         /// </summary>
         private RenderTarget2D _bloomExtractTarget;
         
@@ -97,16 +108,16 @@ namespace MGCustomDrawingPipeline
         private RenderTarget2D _bloomVerticalBlurTarget;
         
         /// <summary>
-        /// Sensitivity for green color bloom extraction
-        /// Higher values make more shades of green produce bloom
+        /// Sensitivity for blue color bloom extraction
+        /// Higher values make more shades of blue produce bloom
         /// </summary>
         private float _colorSensitivity = 0.35f;
         
         /// <summary>
-        /// Target green color for bloom extraction
-        /// This color specifically targets the tree's foliage
+        /// Target blue color for bloom extraction
+        /// This color specifically targets the cornflower blue background
         /// </summary>
-        private Vector3 _targetGreenColor = new Vector3(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f); // CornflowerBlue
+        private Vector3 _targetBlueColor = new Vector3(100.0f / 255.0f, 149.0f / 255.0f, 237.0f / 255.0f); // CornflowerBlue
         
         //===== Animation Properties =====//
         
@@ -145,6 +156,28 @@ namespace MGCustomDrawingPipeline
         private int _totalIndices;
         private int _totalTriangles;
         #endregion
+
+        /// <summary>
+        /// A vertex structure containing position and texture coordinates
+        /// </summary>
+        public struct VertexPositionTexture : IVertexType
+        {
+            public Vector3 Position;
+            public Vector2 TextureCoordinate;
+            
+            public readonly static VertexDeclaration VertexDeclaration = new VertexDeclaration(
+                new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
+                new VertexElement(sizeof(float) * 3, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 0)
+            );
+
+            public VertexPositionTexture(Vector3 position, Vector2 textureCoordinate)
+            {
+                Position = position;
+                TextureCoordinate = textureCoordinate;
+            }
+
+            VertexDeclaration IVertexType.VertexDeclaration => VertexDeclaration;
+        }
 
         /// <summary>
         /// Constructor - initializes the game
@@ -207,24 +240,45 @@ namespace MGCustomDrawingPipeline
         /// </summary>
         protected override void LoadContent()
         {
-            // Create a new SpriteBatch for drawing 2D graphics (not used in this demo)
+            // Create a new SpriteBatch for drawing 2D graphics
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // Create render targets for post-processing
             CreateRenderTargets();
+            
+            // Create the 1x1 pixel color textures
+            CreateColorTextures();
 
-            // Generate tree vertices and indices instead of just a triangle
+            // Generate tree vertices and indices 
             CreateTreeModel();
 
-            //===== BEGINNER NOTE: Shaders =====//
-            // Shaders are small programs that run on the GPU and control rendering
-            // They determine how vertices are transformed and how pixels are colored
-            // Our shader is defined in the TriangleShader.fx file and compiled
-            // during the content build process
+            // Load the tree rendering shader
             _triangleEffect = Content.Load<Effect>("TriangleShader");
             
             // Load the bloom post-processing shader
             _bloomEffect = Content.Load<Effect>("BloomShader");
+        }
+        
+        /// <summary>
+        /// Creates a 1x1 pixel texture with the specified color
+        /// </summary>
+        private Texture2D Create1x1Texture(Color color)
+        {
+            Texture2D texture = new Texture2D(GraphicsDevice, 1, 1);
+            texture.SetData(new[] { color });
+            return texture;
+        }
+        
+        /// <summary>
+        /// Creates the 1x1 textures for the tree colors
+        /// </summary>
+        private void CreateColorTextures()
+        {
+            // Brown color for trunk
+            _trunkTexture = Create1x1Texture(new Color(139, 69, 19));
+            
+            // Green color for leaves
+            _leafTexture = Create1x1Texture(new Color(34, 139, 34));
         }
         
         /// <summary>
@@ -278,7 +332,7 @@ namespace MGCustomDrawingPipeline
         private void CreateTreeModel()
         {
             // Define the tree components
-            (VertexPositionColor[] vertices, short[] indices) = GenerateTree();
+            (VertexPositionTexture[] vertices, short[] indices) = GenerateTree();
             _totalVertices = vertices.Length;
             _totalIndices = indices.Length;
             _totalTriangles = indices.Length / 3;
@@ -286,7 +340,7 @@ namespace MGCustomDrawingPipeline
             // Create vertex buffer
             _vertexBuffer = new VertexBuffer(
                 GraphicsDevice,
-                typeof(VertexPositionColor),
+                VertexPositionTexture.VertexDeclaration,
                 _totalVertices,
                 BufferUsage.WriteOnly);
             _vertexBuffer.SetData(vertices);
@@ -303,15 +357,15 @@ namespace MGCustomDrawingPipeline
         /// <summary>
         /// Generates vertices and indices for a simple tree
         /// </summary>
-        private (VertexPositionColor[] vertices, short[] indices) GenerateTree()
+        private (VertexPositionTexture[] vertices, short[] indices) GenerateTree()
         {
-            // Colors for the tree
-            Color trunkColor = new Color(139, 69, 19);    // Brown for trunk
-            Color leafColor = new Color(34, 139, 34);     // Forest green for leaves
-
             // Create a list to hold all vertices and indices
-            var verticesList = new System.Collections.Generic.List<VertexPositionColor>();
-            var indicesList = new System.Collections.Generic.List<short>();
+            var verticesList = new List<VertexPositionTexture>();
+            var indicesList = new List<short>();
+            
+            // For 1x1 textures, we can use any texture coordinate
+            // The color will be the same regardless of the UV
+            Vector2 texCoord = new Vector2(0.5f, 0.5f);
             
             // 1. Create the trunk (a simple rectangular prism)
             Vector3 trunkBase = new Vector3(0, -0.5f, 0);
@@ -319,16 +373,16 @@ namespace MGCustomDrawingPipeline
             float trunkHeight = 0.5f;
             
             // Trunk vertices (bottom square)
-            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(-trunkWidth, 0, -trunkWidth), trunkColor));
-            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(trunkWidth, 0, -trunkWidth), trunkColor));
-            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(trunkWidth, 0, trunkWidth), trunkColor));
-            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(-trunkWidth, 0, trunkWidth), trunkColor));
+            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, -trunkWidth), texCoord));
+            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, -trunkWidth), texCoord));
+            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(trunkWidth, 0, trunkWidth), texCoord));
+            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, 0, trunkWidth), texCoord));
             
             // Trunk vertices (top square)
-            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(-trunkWidth, trunkHeight, -trunkWidth), trunkColor));
-            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(trunkWidth, trunkHeight, -trunkWidth), trunkColor));
-            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(trunkWidth, trunkHeight, trunkWidth), trunkColor));
-            verticesList.Add(new VertexPositionColor(trunkBase + new Vector3(-trunkWidth, trunkHeight, trunkWidth), trunkColor));
+            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, -trunkWidth), texCoord));
+            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, -trunkWidth), texCoord));
+            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(trunkWidth, trunkHeight, trunkWidth), texCoord));
+            verticesList.Add(new VertexPositionTexture(trunkBase + new Vector3(-trunkWidth, trunkHeight, trunkWidth), texCoord));
             
             // Trunk indices (6 faces, 2 triangles per face = 12 triangles)
             // Bottom face
@@ -351,7 +405,7 @@ namespace MGCustomDrawingPipeline
             Vector3 leafTop = leafBase + new Vector3(0, leafHeight, 0);
             
             // Add the top vertex of the cone
-            verticesList.Add(new VertexPositionColor(leafTop, leafColor));
+            verticesList.Add(new VertexPositionTexture(leafTop, texCoord));
             
             // Add vertices in a circle for the base of the cone
             int leafSegments = 8;
@@ -361,7 +415,7 @@ namespace MGCustomDrawingPipeline
                 float x = (float)System.Math.Sin(angle) * leafRadius;
                 float z = (float)System.Math.Cos(angle) * leafRadius;
                 
-                verticesList.Add(new VertexPositionColor(leafBase + new Vector3(x, 0, z), leafColor));
+                verticesList.Add(new VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
             }
             
             // Add triangles connecting the top to each segment of the circle
@@ -388,7 +442,7 @@ namespace MGCustomDrawingPipeline
             leafRadius *= 0.7f;
             
             // Add the top vertex of the second cone
-            verticesList.Add(new VertexPositionColor(leafTop, leafColor));
+            verticesList.Add(new VertexPositionTexture(leafTop, texCoord));
             
             // Add vertices in a circle for the base of the second cone
             for (int i = 0; i < leafSegments; i++)
@@ -397,7 +451,7 @@ namespace MGCustomDrawingPipeline
                 float x = (float)System.Math.Sin(angle) * leafRadius;
                 float z = (float)System.Math.Cos(angle) * leafRadius;
                 
-                verticesList.Add(new VertexPositionColor(leafBase + new Vector3(x, 0, z), leafColor));
+                verticesList.Add(new VertexPositionTexture(leafBase + new Vector3(x, 0, z), texCoord));
             }
             
             // Add triangles connecting the top to each segment of the circle
@@ -416,7 +470,7 @@ namespace MGCustomDrawingPipeline
         /// <summary>
         /// Helper method to add indices for a quad (two triangles)
         /// </summary>
-        private void AddQuad(System.Collections.Generic.List<short> indices, int a, int b, int c, int d)
+        private void AddQuad(List<short> indices, int a, int b, int c, int d)
         {
             // First triangle
             indices.Add((short)a);
@@ -510,14 +564,14 @@ namespace MGCustomDrawingPipeline
             GraphicsDevice.Clear(Color.CornflowerBlue);
             DrawTree();
             
-            // STEP 2: Extract the green colors from the scene into a separate render target
+            // STEP 2: Extract the blue colors from the scene into a separate render target
             GraphicsDevice.SetRenderTarget(_bloomExtractTarget);
             GraphicsDevice.Clear(Color.Black);
             
-            // Configure the shader parameters for green color extraction
+            // Configure the shader parameters for blue color extraction
             _bloomEffect.Parameters["InputTexture"].SetValue(_sceneRenderTarget);
             _bloomEffect.Parameters["BloomThreshold"].SetValue(_bloomThreshold);
-            _bloomEffect.Parameters["TargetColor"].SetValue(_targetGreenColor);
+            _bloomEffect.Parameters["TargetColor"].SetValue(_targetBlueColor);
             _bloomEffect.Parameters["ColorSensitivity"].SetValue(_colorSensitivity);
             _bloomEffect.Parameters["ScreenSize"].SetValue(new Vector2(
                 GraphicsDevice.Viewport.Width, 
@@ -530,7 +584,7 @@ namespace MGCustomDrawingPipeline
             _spriteBatch.Draw(_sceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
             _spriteBatch.End();
             
-            // STEP 3: Apply horizontal Gaussian blur to the extracted green colors
+            // STEP 3: Apply horizontal Gaussian blur to the extracted blue colors
             GraphicsDevice.SetRenderTarget(_bloomHorizontalBlurTarget);
             GraphicsDevice.Clear(Color.Black);
             
@@ -578,7 +632,7 @@ namespace MGCustomDrawingPipeline
         }
         
         /// <summary>
-        /// Draws the rotating tree
+        /// Draws the rotating tree using textures for coloring
         /// </summary>
         private void DrawTree()
         {
@@ -610,16 +664,36 @@ namespace MGCustomDrawingPipeline
 
             // Send the transformation matrix to the shader
             _triangleEffect.Parameters["WorldViewProjection"].SetValue(world * view * projection);
-
-            // Draw the tree using our shader
+            
+            // First draw the trunk
+            _triangleEffect.Parameters["ModelTexture"].SetValue(_trunkTexture);
+            
             foreach (EffectPass pass in _triangleEffect.CurrentTechnique.Passes)
             {
                 pass.Apply();
+                
+                // Draw the trunk portion (first 12 triangles - 6 faces with 2 triangles each)
                 GraphicsDevice.DrawIndexedPrimitives(
                     PrimitiveType.TriangleList,
                     0,       // Base vertex offset
                     0,       // Start index
-                    _totalTriangles // Number of triangles
+                    12       // Number of triangles for the trunk
+                );
+            }
+            
+            // Then draw the foliage
+            _triangleEffect.Parameters["ModelTexture"].SetValue(_leafTexture);
+            
+            foreach (EffectPass pass in _triangleEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                
+                // Draw the foliage portion (remaining triangles)
+                GraphicsDevice.DrawIndexedPrimitives(
+                    PrimitiveType.TriangleList,
+                    0,            // Base vertex offset
+                    12 * 3,       // Start index (after trunk triangles)
+                    _totalTriangles - 12  // Number of triangles for foliage
                 );
             }
         }
@@ -633,6 +707,10 @@ namespace MGCustomDrawingPipeline
             _vertexBuffer?.Dispose();
             _indexBuffer?.Dispose();
             _doubleSidedRasterizerState?.Dispose();
+            
+            // Dispose textures
+            _trunkTexture?.Dispose();
+            _leafTexture?.Dispose();
             
             // Dispose all render targets used in the post-processing pipeline
             _sceneRenderTarget?.Dispose();
