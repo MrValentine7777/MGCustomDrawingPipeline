@@ -22,14 +22,14 @@ This project was created to:
 - Creating color-specific visual effects using shader technology
 
 ## Project Features
-- A rotating 3D tree model with vertex coloring
+- A rotating 3D tree model with texture-based coloring
 - Custom HLSL shader with detailed comments explaining each section
 - Transformation matrices for proper 3D positioning and animation
 - Comprehensive code comments designed for educational purposes
 - HiDef graphics profile with multi-sampling for anti-aliasing
 - High-precision 24-bit depth buffer with 8-bit stencil
 - DirectX 11 shader model 5.0 for maximum graphical fidelity
-- Color-targeted bloom post-processing effect that makes green foliage glow
+- Color-targeted bloom post-processing effect that makes the blue background glow
 - Multi-pass rendering pipeline utilizing render targets
 
 ## Getting Started
@@ -50,7 +50,7 @@ This project was created to:
 If you see a black screen after pressing 'P' to enable post-processing:
 - Ensure all content (shader files) has been properly built and is included in the output directory
 - Check that your graphics card supports the shader features being used
-- Try increasing `_bloomIntensity` in Game1.cs if the effect is too subtle to see
+- Try increasing `BloomIntensity` in GameState.cs if the effect is too subtle to see
 - Some systems may require a restart of the application after the first attempt at using post-processing
 - If you modified the shader code, ensure all required parameters are properly set in DrawSceneToRenderTarget()
 
@@ -58,23 +58,26 @@ If you see a black screen after pressing 'P' to enable post-processing:
 
 ### Key Components
 - **Game1.cs**: Main game class that implements the custom drawing pipeline with HiDef settings
+- **GameState.cs**: Contains all state variables and configuration for the game
 - **TriangleShader.fx**: HLSL shader file that defines vertex and pixel shaders using shader model 5.0
 - **BloomShader.fx**: HLSL shader file that implements the multi-pass bloom post-processing effect
 - **Program.cs**: Application entry point
 - **Content.mgcb**: Content pipeline configuration with HiDef profile settings
+- **TextureManagement/ColorTextureCreator.cs**: Handles creation of 1x1 textures for model coloring
+- **Utilities/TextureUtilities.cs**: Utility methods for texture operations
 
 ### How It Works
 The application demonstrates a complete rendering pipeline:
-1. **Scene Rendering**: The 3D tree model is rendered using vertex and index buffers
-2. **Post-Processing Extraction**: The green color from the tree's foliage is extracted using a color-targeted bloom shader
+1. **Scene Rendering**: The 3D tree model is rendered using vertex and index buffers with 1x1 color textures
+2. **Post-Processing Extraction**: The blue color from the background is extracted using a color-targeted bloom shader
 3. **Gaussian Blur**: A two-pass (horizontal and vertical) Gaussian blur is applied to the extracted colors
 4. **Final Composition**: The original scene and the blurred glow effect are combined for the final image
 
 ## Understanding the Post-Processing Pipeline
 
-The project implements a multi-stage bloom effect specifically targeting the green colors of the tree:
+The project implements a multi-stage bloom effect specifically targeting the cornflower blue color of the background:
 
-1. **Color Extraction**: The GreenBloomExtract shader pass extracts pixels similar to the forest green color
+1. **Color Extraction**: The BlueBloomExtract shader pass extracts pixels similar to the cornflower blue color
 2. **Horizontal Blur**: The first blur pass applies a Gaussian blur in the horizontal direction
 3. **Vertical Blur**: The second blur pass applies a Gaussian blur in the vertical direction
 4. **Combination**: The bloom effect is combined with the original image to create the final glowing effect
@@ -82,11 +85,12 @@ The project implements a multi-stage bloom effect specifically targeting the gre
 Each stage uses dedicated render targets to store intermediate results before final composition.
 
 ### Post-Processing Parameters
-You can adjust the bloom effect by modifying these parameters in Game1.cs:
-- **_bloomIntensity**: Controls the brightness of the bloom effect (default: 1.5f)
-- **_bloomThreshold**: Determines minimum brightness for bloom to occur (default: 0.3f)
-- **_bloomBlurAmount**: Controls the spread of the blur effect (default: 4.0f)
-- **_colorSensitivity**: Adjusts how selective the green color targeting is (default: 0.25f)
+You can adjust the bloom effect by modifying these parameters in GameState.cs:
+- **BloomIntensity**: Controls the brightness of the bloom effect (default: 1.5f)
+- **BloomThreshold**: Determines minimum brightness for bloom to occur (default: 0.2f)
+- **BloomBlurAmount**: Controls the spread of the blur effect (default: 4.0f)
+- **ColorSensitivity**: Adjusts how selective the blue color targeting is (default: 0.35f)
+- **TargetBlueColor**: The specific color to be targeted by the bloom effect (default: CornflowerBlue)
 
 ## Graphics Profile Details
 The project uses MonoGame's HiDef graphics profile which provides:
@@ -100,7 +104,8 @@ The project uses MonoGame's HiDef graphics profile which provides:
 ## Further Learning
 To continue exploring graphics programming concepts:
 - Experiment with modifying the bloom parameters for different effects
-- Try targeting different colors for the bloom effect
+- Try targeting different colors for the bloom effect (the shader includes options for both blue and green targeting)
+- Modify the tree model to add more complexity or detail
 - Implement additional post-processing effects (HDR, tone mapping, etc.)
 - Explore different blur algorithms beyond Gaussian blur
 - Experiment with more complex 3D models and scenes
