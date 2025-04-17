@@ -75,12 +75,12 @@ namespace MGCustomDrawingPipeline
         /// <summary>
         /// Sunlight color and intensity
         /// </summary>
-        public Vector3 SunlightColor { get; set; } = new Vector3(1.0f, 0.9f, 0.7f);
+        public Vector3 SunlightColor { get; set; } = new Vector3(1.0f, 0.9f, 0.5f); // More saturated sunlight
 
         /// <summary>
         /// Sunlight intensity
         /// </summary>
-        public float SunlightIntensity { get; set; } = 0.8f;
+        public float SunlightIntensity { get; set; } = 1.2f; // Increased from 0.8f
 
         /// <summary>
         /// Specular light color and intensity
@@ -114,19 +114,19 @@ namespace MGCustomDrawingPipeline
         /// Bloom intensity parameter
         /// Controls how bright the bloom effect appears in the final image
         /// </summary>
-        public float BloomIntensity { get; set; } = 1.5f;
+        public float BloomIntensity { get; set; } = 2.5f; // Increased from 1.5f
         
         /// <summary>
         /// Bloom threshold parameter
         /// Determines the minimum brightness level that will produce bloom
         /// </summary>
-        public float BloomThreshold { get; set; } = 0.2f;
+        public float BloomThreshold { get; set; } = 0.1f; // Lowered from 0.2f
         
         /// <summary>
         /// Bloom blur amount parameter
         /// Controls the spread of the bloom effect
         /// </summary>
-        public float BloomBlurAmount { get; set; } = 4.0f;
+        public float BloomBlurAmount { get; set; } = 6.0f; // Increased from 4.0f
         
         /// <summary>
         /// Render target for bloom extraction
@@ -150,7 +150,7 @@ namespace MGCustomDrawingPipeline
         /// Sensitivity for blue color bloom extraction
         /// Higher values make more shades of blue produce bloom
         /// </summary>
-        public float ColorSensitivity { get; set; } = 0.35f;
+        public float ColorSensitivity { get; set; } = 0.5f; // Increased from 0.35f
         
         /// <summary>
         /// Target blue color for bloom extraction

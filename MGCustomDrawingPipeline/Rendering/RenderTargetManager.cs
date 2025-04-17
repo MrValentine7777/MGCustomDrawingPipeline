@@ -23,7 +23,7 @@ namespace MGCustomDrawingPipeline.Rendering
                 width,
                 height,
                 false,
-                SurfaceFormat.Color, // Standard color format for the main scene
+                SurfaceFormat.Rgba64, // Higher precision color data
                 DepthFormat.Depth24Stencil8); // Need depth for 3D rendering
                 
             // Create render targets for the multi-pass bloom effect pipeline
@@ -33,7 +33,7 @@ namespace MGCustomDrawingPipeline.Rendering
                 width,
                 height,
                 false,
-                SurfaceFormat.Color,
+                SurfaceFormat.Rgba64, // Higher precision color data
                 DepthFormat.None);
                 
             state.BloomHorizontalBlurTarget = new RenderTarget2D(
@@ -41,7 +41,7 @@ namespace MGCustomDrawingPipeline.Rendering
                 width,
                 height,
                 false,
-                SurfaceFormat.Color,
+                SurfaceFormat.Rgba64, // Higher precision color data
                 DepthFormat.None);
                 
             state.BloomVerticalBlurTarget = new RenderTarget2D(
@@ -49,7 +49,7 @@ namespace MGCustomDrawingPipeline.Rendering
                 width,
                 height,
                 false,
-                SurfaceFormat.Color,
+                SurfaceFormat.Rgba64, // Higher precision color data
                 DepthFormat.None);
         }
     }

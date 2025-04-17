@@ -6,6 +6,7 @@ using MGCustomDrawingPipeline.TextureManagement;
 using MGCustomDrawingPipeline.Rendering;
 using MGCustomDrawingPipeline.Input;
 using MGCustomDrawingPipeline.Animation;
+using System;
 
 namespace MGCustomDrawingPipeline
 {
@@ -100,23 +101,51 @@ namespace MGCustomDrawingPipeline
         /// </summary>
         protected override void LoadContent()
         {
-            // Create a new SpriteBatch for drawing 2D graphics
-            _state.SpriteBatch = new SpriteBatch(GraphicsDevice);
+            try
+            {
+                // Create a new SpriteBatch for drawing 2D graphics
+                _state.SpriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // Create render targets for post-processing
-            RenderTargetManager.CreateRenderTargets(GraphicsDevice, _state);
-            
-            // Create the 1x1 pixel color textures
-            ColorTextureCreator.CreateTreeColorTextures(GraphicsDevice, _state);
+                // Create render targets for post-processing
+                RenderTargetManager.CreateRenderTargets(GraphicsDevice, _state);
+                
+                // Create the 1x1 pixel color textures
+                ColorTextureCreator.CreateTreeColorTextures(GraphicsDevice, _state);
 
-            // Generate tree vertices and indices 
-            TreeModelGenerator.CreateTreeModel(GraphicsDevice, _state);
+                // Generate tree vertices and indices 
+                TreeModelGenerator.CreateTreeModel(GraphicsDevice, _state);
 
-            // Load the tree rendering shader
-            _state.TriangleEffect = Content.Load<Effect>("TriangleShader");
-            
-            // Load the bloom post-processing shader
-            _state.BloomEffect = Content.Load<Effect>("BloomShader");
+                // Load the tree rendering shader
+                _state.TriangleEffect = Content.Load<Effect>("TriangleShader");
+                if (_state.TriangleEffect == null)
+                    throw new InvalidOperationException("Failed to load TriangleShader effect");
+                
+                // Load and validate the bloom post-processing shader
+                _state.BloomEffect = Content.Load<Effect>("BloomShader");
+                if (_state.BloomEffect == null)
+                    throw new InvalidOperationException("Failed to load BloomShader effect");
+                    
+                // Verify that required techniques exist
+                try
+                {
+                    var sunlightTechnique = _state.BloomEffect.Techniques["SunlightBloomExtract"];
+                    var blurTechnique = _state.BloomEffect.Techniques["GaussianBlur"];
+                    var combineTechnique = _state.BloomEffect.Techniques["BloomCombine"];
+                    System.Diagnostics.Debug.WriteLine("All shader techniques verified successfully");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Shader technique verification failed: {ex.Message}");
+                }
+                
+                // Log success message
+                System.Diagnostics.Debug.WriteLine("All shaders and content loaded successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading content: {ex.Message}");
+                // Consider showing a user-friendly error message
+            }
         }
 
         /// <summary>
@@ -142,25 +171,45 @@ namespace MGCustomDrawingPipeline
         /// <param name="gameTime">Provides a snapshot of timing values</param>
         protected override void Draw(GameTime gameTime)
         {
-            if (_state.UsePostProcessing)
+            try
             {
-                // Apply the multi-pass bloom post-processing to the scene
-                PostProcessingRenderer.DrawSceneToRenderTarget(GraphicsDevice, _state, _treeRenderer);
-                
-                // Present the final post-processed scene to the screen
-                GraphicsDevice.SetRenderTarget(null);
-                GraphicsDevice.Clear(Color.Black);
-                
-                _state.SpriteBatch.Begin();
-                _state.SpriteBatch.Draw(_state.SceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
-                _state.SpriteBatch.End();
+                if (_state.UsePostProcessing)
+                {
+                    // set the render target to the scene render target
+                    GraphicsDevice.SetRenderTarget(_state.SceneRenderTarget);
+                    GraphicsDevice.Clear(Color.Transparent);
+                    // Apply the multi-pass bloom post-processing to the scene
+                    PostProcessingRenderer.DrawSceneToRenderTarget(GraphicsDevice, _state, _treeRenderer);
+                    
+                    // Present the final post-processed scene to the screen
+                    GraphicsDevice.SetRenderTarget(null);
+                    GraphicsDevice.Clear(Color.Transparent);
+                    
+                    _state.SpriteBatch.Begin();
+                    _state.SpriteBatch.Draw(_state.SceneRenderTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+                    _state.SpriteBatch.End();
+                }
+                else
+                {
+                    // Draw directly to the screen without post-processing for comparison
+                    GraphicsDevice.SetRenderTarget(null);
+                    GraphicsDevice.Clear(Color.Transparent);
+                    _treeRenderer.DrawTree(GraphicsDevice, _state);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                // Draw directly to the screen without post-processing for comparison
-                GraphicsDevice.SetRenderTarget(null);
-                GraphicsDevice.Clear(Color.CornflowerBlue);
-                _treeRenderer.DrawTree(GraphicsDevice, _state);
+                // Log the error - in a real app you'd want to use a proper logging system
+                System.Diagnostics.Debug.WriteLine($"Rendering error: {ex.Message}");
+                
+                // Fall back to basic rendering if post-processing fails
+                if (_state.UsePostProcessing)
+                {
+                    _state.UsePostProcessing = false;
+                    GraphicsDevice.SetRenderTarget(null);
+                    GraphicsDevice.Clear(Color.CornflowerBlue);
+                    _treeRenderer.DrawTree(GraphicsDevice, _state);
+                }
             }
 
             base.Draw(gameTime);
