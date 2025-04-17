@@ -44,8 +44,8 @@ namespace MGCustomDrawingPipeline.Animation
             // Update rotation angles at different speeds for each axis
             // We multiply by elapsed time to ensure smooth animation regardless of frame rate
             // This is called "frame rate independent" animation
-            state.RotationAngleX += 0.2f * elapsed;  // Rotate around X axis (slower)
-            state.RotationAngleY += 0.3f * elapsed;  // Rotate around Y axis (faster)
+            state.RotationAngleX += 0.5f * elapsed;  // Rotate around X axis (slower)
+            state.RotationAngleY += 0.7f * elapsed;  // Rotate around Y axis (faster)
             
             // Keep angles between 0 and 2π (full circle in radians)
             // This isn't strictly necessary but prevents the values from
