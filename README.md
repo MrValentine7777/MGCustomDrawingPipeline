@@ -3,7 +3,7 @@
 ## Overview
 MGCustomDrawingPipeline is an educational MonoGame project designed to help developers understand the fundamentals of custom drawing pipelines and shader programming. This project provides a clear, well-commented implementation of a basic 3D rendering system using MonoGame's low-level graphics APIs, leveraging the HiDef graphics profile for enhanced visual quality.
 
-> **Update:** This project has been upgraded to use MonoGame 3.8.3, providing improved performance, better compatibility with modern systems, and access to the latest framework features.
+> **Update:** This project has been upgraded to use MonoGame 3.8.3 with .NET 9, providing improved performance, better compatibility with modern systems, and access to the latest framework features.
 
 ## Purpose
 This project was created to:
@@ -12,6 +12,7 @@ This project was created to:
 - Show the connection between C# code and GPU operations
 - Serve as a learning resource for graphics programming beginners
 - Illustrate the benefits of using HiDef graphics profile over Reach
+- Showcase an organized, component-based architecture for rendering pipelines
 
 ## What You'll Learn
 - Creating and managing vertex and index buffers
@@ -22,9 +23,10 @@ This project was created to:
 - Configuring HiDef graphics settings for improved visual quality
 - Implementing advanced post-processing techniques like bloom effects
 - Creating color-specific visual effects using shader technology
+- Structuring rendering code using dedicated component classes
 
 ## Project Features
-- A rotating 3D tree model with texture-based coloring
+- A rotating 3D tree model with texture-based coloring (trunk and foliage)
 - Custom HLSL shader with detailed comments explaining each section
 - Transformation matrices for proper 3D positioning and animation
 - Comprehensive code comments designed for educational purposes
@@ -33,6 +35,7 @@ This project was created to:
 - DirectX 11 shader model 5.0 for maximum graphical fidelity
 - Color-targeted bloom post-processing effect that makes the blue background glow
 - Multi-pass rendering pipeline utilizing render targets
+- Component-based architecture with dedicated rendering classes
 
 ## Getting Started
 
@@ -59,14 +62,17 @@ If you see a black screen after pressing 'P' to enable post-processing:
 ## Project Structure
 
 ### Key Components
-- **Game1.cs**: Main game class that implements the custom drawing pipeline with HiDef settings
+- **Game1.cs**: Main game class that initializes the game components and orchestrates the rendering
 - **GameState.cs**: Contains all state variables and configuration for the game
+- **TreeRenderer.cs**: Handles the specific rendering of the 3D tree model
+- **PostProcessingRenderer.cs**: Implements the multi-pass bloom post-processing
+- **TreeModelGenerator.cs**: Creates the vertex and index buffers for the tree model
+- **RenderTargetManager.cs**: Manages the render targets used in post-processing
+- **ColorTextureCreator.cs**: Handles creation of 1x1 textures for model coloring
+- **InputManager.cs**: Processes user input for controlling the application
+- **ModelAnimator.cs**: Controls the animation of the tree model
 - **TriangleShader.fx**: HLSL shader file that defines vertex and pixel shaders using shader model 5.0
 - **BloomShader.fx**: HLSL shader file that implements the multi-pass bloom post-processing effect
-- **Program.cs**: Application entry point
-- **Content.mgcb**: Content pipeline configuration with HiDef profile settings
-- **TextureManagement/ColorTextureCreator.cs**: Handles creation of 1x1 textures for model coloring
-- **Utilities/TextureUtilities.cs**: Utility methods for texture operations
 
 ### How It Works
 The application demonstrates a complete rendering pipeline:
@@ -103,14 +109,13 @@ The project uses MonoGame's HiDef graphics profile which provides:
 - Better visual quality at the cost of requiring more capable hardware
 - Access to advanced DirectX 11 features like compute shaders and tessellation
 
-## MonoGame 3.8.3 Benefits
-The project now leverages MonoGame 3.8.3, which includes:
-- Improved content pipeline with better error reporting
-- Enhanced shader compilation and validation
-- Better performance through optimized rendering paths
-- More reliable cross-platform compatibility
-- Updated dependencies and tools
-- Improved support for modern development environments
+## Component-Based Architecture
+The project demonstrates a well-structured approach to game development:
+- **Separation of Concerns**: Each class has a specific responsibility
+- **Modularity**: Components like TreeRenderer and PostProcessingRenderer encapsulate specific functionality
+- **State Management**: The GameState class centralizes all game state variables
+- **Utility Classes**: Dedicated classes for tasks like texture creation and input handling
+- **Organized Namespaces**: Code is organized into logical categories (Rendering, Animation, Input, etc.)
 
 ## Further Learning
 To continue exploring graphics programming concepts:
