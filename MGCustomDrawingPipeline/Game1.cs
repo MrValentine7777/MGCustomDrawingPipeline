@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 using MGCustomDrawingPipeline.VertexTypes;
+using MGCustomDrawingPipeline.Utilities;
 
 namespace MGCustomDrawingPipeline
 {
@@ -104,25 +105,15 @@ namespace MGCustomDrawingPipeline
         }
         
         /// <summary>
-        /// Creates a 1x1 pixel texture with the specified color
-        /// </summary>
-        private Texture2D Create1x1Texture(Color color)
-        {
-            Texture2D texture = new Texture2D(GraphicsDevice, 1, 1);
-            texture.SetData(new[] { color });
-            return texture;
-        }
-        
-        /// <summary>
         /// Creates the 1x1 textures for the tree colors
         /// </summary>
         private void CreateColorTextures()
         {
             // Brown color for trunk
-            _state.TrunkTexture = Create1x1Texture(new Color(139, 69, 19));
+            _state.TrunkTexture = TextureUtilities.Create1x1Texture(GraphicsDevice, new Color(139, 69, 19));
             
             // Green color for leaves
-            _state.LeafTexture = Create1x1Texture(new Color(34, 139, 34));
+            _state.LeafTexture = TextureUtilities.Create1x1Texture(GraphicsDevice, new Color(34, 139, 34));
         }
         
         /// <summary>
@@ -566,3 +557,4 @@ namespace MGCustomDrawingPipeline
         }
     }
 }
+
